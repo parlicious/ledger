@@ -19,8 +19,10 @@ export default new Vuex.Store({
   actions: {
     signIn({ commit }, googleUser) {
       const profile = googleUser.getBasicProfile();
+      const auth = googleUser.getAuthResponse();
       const user = {
         id: profile.getId(),
+        token: auth.id_token,
         name: profile.getName(),
         email: profile.getEmail(),
       };

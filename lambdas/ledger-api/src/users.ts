@@ -84,7 +84,6 @@ const usersMatch = (u1?: User, u2?: User) => {
 };
 
 const getSanitizedUserProfile = (user?: User) => {
-    const sanitizedUser = user;
     return _.omit(user, ['id']);
 };
 
