@@ -4,13 +4,19 @@
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "build": "tsc -p ./src"
+    "build": "tsc -p ./src",
+    "inspect": "npm run build && node --inspect-brk dist/users.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@types/aws-lambda": "^8.10.24",
+    "@types/lodash": "^4.14.123",
     "aws-sdk": "^2.430.0",
+    "google-auth-library": "^3.1.2",
+    "googleapis": "^39.2.0",
+    "lodash": "^4.17.11",
+    "source-map-support": "^0.5.12",
     "typescript": "^3.4.4"
   },
   "devDependencies": {

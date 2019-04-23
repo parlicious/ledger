@@ -1,15 +1,24 @@
-const {OAuth2Client} = require('google-auth-library');
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const client = new OAuth2Client(CLIENT_ID);
-const AWS = require('aws-sdk');
+import {google} from "googleapis";
+import {S3} from "aws-sdk";
+import * as _ from 'lodash';
+import 'source-map-support/register';
+
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const client = new google.auth.OAuth2(CLIENT_ID);
+
 const DATA_BUCKET = process.env.DATA_BUCKET_NAME || 'parledger-data-public';
-const s3 = new AWS.S3();
-const token = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjM3ODJkM2YwYmM4OTAwOGQ5ZDJjMDE3MzBmNzY1Y2ZiMTlkM2I3MGUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiMTA5NjUzOTYwMzM1My11c3N0bDY1bnZsZHVyZmRzYmU2anNrdWFjOWhjc29lZy5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsImF1ZCI6IjEwOTY1Mzk2MDMzNTMtdXNzdGw2NW52bGR1cmZkc2JlNmpza3VhYzloY3NvZWcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTc5NzgyNDE5MDcxMDE4MTM4NzgiLCJlbWFpbCI6InBhcmxpY2lvdXNhcHBAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiIxSGJieGV0cGJoaWxiSm1MaVB3U25RIiwibmFtZSI6IkRvbm5pZSBNYXR0aW5nbHkiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDUuZ29vZ2xldXNlcmNvbnRlbnQuY29tLy14V2VPdE9SeVVsSS9BQUFBQUFBQUFBSS9BQUFBQUFBQUFBQS9BQ0hpM3JmWTFpY0hDSDU0dHhnWWFGOWpscTJFNXdLckh3L3M5Ni1jL3Bob3RvLmpwZyIsImdpdmVuX25hbWUiOiJEb25uaWUiLCJmYW1pbHlfbmFtZSI6Ik1hdHRpbmdseSIsImxvY2FsZSI6ImVuIiwiaWF0IjoxNTU1NjgxMDc1LCJleHAiOjE1NTU2ODQ2NzUsImp0aSI6IjNhZTc2MjU0OTUwZDZlMmQ2MmJhNjJmOTk4YzIzMWRiYTBjOTU5ZDEifQ.Z6kRIKHb_X75vKIxnhWAxCssdxKgWoyve8FBTYE3s4-ucfazD5VYiMoI2yBD8V1CA7xt378FUPvL0BwpebqAJmZxDJoiHCgY2_naTT1tqpP0CmBeB49l117o-F2-s65OgcC9QoKnRLtPz3IfYdnPyANp651DqRD_qQNWg1CwIY4oc1Iw1AMBH_10xRbS70eVYTCMpJPEowcyjGblutXaLfrdyZTq9MdJXJ8NjDlkDAZhJhwRCSxhojS9th4Zsx_WZUoX_6ySD8tp41zUmrTlKJlP5J2mCiUMHhgsZZcwu-HQMZs05fxpU_JU0UyspRngpVufaY3hRYZt09TGbzv1Ag";
+const s3 = new S3();
+const token = "";
 const loginErrors = {
     TOKEN_INVALID: 'The supplied token was invalid',
     USER_NOT_FOUND: 'The user was not found',
     TOKEN_MISMATCH: 'Could not validate the token for this user',
 };
+
+const SUCCESS = 'success';
+const FAIL = 'fail';
+
+
 const getUserInfoFromLoginToken = async (token: string): Promise<User> => {
     try {
         const ticket = await client.verifyIdToken({
@@ -17,20 +26,24 @@ const getUserInfoFromLoginToken = async (token: string): Promise<User> => {
             audience: CLIENT_ID,
         });
         const payload = ticket.getPayload();
-        const {sub: id, email} = payload;
-        return {
-            status: 'success',
-            id,
-            email
-        };
-    } catch (e) {
-        console.log(e);
-        return {
-            status: 'fail'
+        if (payload) {
+            const {sub: id, email} = payload;
+            return {
+                status: SUCCESS,
+                id,
+                email
+            };
         }
+    } catch (e) {
+        console.error(e);
+    }
+
+    return {
+        status: FAIL
     }
 };
-const lookupUser = async (email: string) => {
+
+const lookupUser = async (email: string): Promise<{status: string, user?: User}> => {
     const key = `users/confirmed/${email}`;
     const params = {
         Bucket: DATA_BUCKET,
@@ -39,19 +52,22 @@ const lookupUser = async (email: string) => {
     let data;
     try {
         data = await s3.getObject(params).promise();
+        if(data && data.Body){
+            return {
+                status: SUCCESS,
+                user: JSON.parse(data.Body.toString())
+            };
+        }
     } catch (e) {
         console.log(e);
-        return {
-            status: 'fail',
-        }
     }
 
     return {
-        status: 'success',
-        user: JSON.parse(data.Body)
-    };
+        status: FAIL,
+    }
 };
-const succeeded = (res: {status: string}) => res.status === 'success';
+
+const succeeded = (res: { status: string }) => res.status === SUCCESS;
 
 interface User {
     id?: string;
@@ -59,12 +75,17 @@ interface User {
     email?: string;
 }
 
-const usersMatch = (u1: User, u2: User) => {
-    return u1.id === u2.id;
+const usersMatch = (u1?: User, u2?: User) => {
+    if(u1 && u2){
+        return u1.id === u2.id;
+    }
+
+    return false;
 };
 
-const getUserProfile = (userObject: User) => {
-
+const getSanitizedUserProfile = (user?: User) => {
+    const sanitizedUser = user;
+    return _.omit(user, ['id']);
 };
 
 export const signIn = async (token: string) => {
@@ -72,11 +93,11 @@ export const signIn = async (token: string) => {
     let message = '';
     if (succeeded(userRequest)) {
         const userRetrieved = await lookupUser(userRequest.email || '');
-        if (succeeded(userRetrieved)) {
-            if(usersMatch(userRequest, userRetrieved)){
+        if (userRetrieved && succeeded(userRetrieved)) {
+            if (usersMatch(userRequest, userRetrieved.user)) {
                 return {
-                    status: 'SUCCESS',
-                    user: getUserProfile(userRetrieved)
+                    status: SUCCESS,
+                    user: getSanitizedUserProfile(userRetrieved.user)
                 }
             } else {
                 message = loginErrors.TOKEN_MISMATCH;
@@ -89,8 +110,11 @@ export const signIn = async (token: string) => {
     }
 
     return {
-        status: 'FAIL',
+        status: FAIL,
         message: message
     }
 };
-signIn(token).catch(console.error);
+
+signIn(token)
+    .then(console.log)
+    .catch(console.error);
