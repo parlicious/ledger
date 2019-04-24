@@ -1,6 +1,7 @@
 import {ALBCallback, ALBEvent, ALBEventRequestContext} from 'aws-lambda';
 import * as AWS from 'aws-sdk';
 import {fail, success} from './http';
+import {eventToRequest, GET, route, Router} from "./router";
 
 const s3 = new AWS.S3();
 const lambda = new AWS.Lambda();
@@ -52,14 +53,14 @@ const handleOptions = async (event: ALBEvent) => {
 
 export const handler = async (event: ALBEvent, context: ALBEventRequestContext, callback: ALBCallback) => {
     console.log('Received event:', JSON.stringify(event, null, 2));
-    switch (event.httpMethod) {
-        case 'POST':
-            return handlePost(event);
-        case 'GET':
-            return handleGet(event);
-        case 'OPTIONS':
-            return handleOptions(event);
-        default:
-            return fail('Method Not Allowed', '405');
-    }
+    const router = new Router(
+        [
+            route(GET('/test'), (request) => {
+                return success({message: 'router works'})
+            })
+        ],
+    );
+
+    const request = eventToRequest(event);
+    return router.handleRequest(request);
 };
