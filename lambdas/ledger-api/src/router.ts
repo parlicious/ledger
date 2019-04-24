@@ -3,6 +3,7 @@
  * functional router, but it handles ALBEvents and routes / responds
  * accordingly
  *
+ * TODO: check out https://github.com/pillarjs/path-to-regexp
  */
 
 import {ALBEvent} from "aws-lambda";
@@ -24,11 +25,7 @@ export interface Response {
 }
 
 export class Router{
-    routes: RouterFunction[];
-
-    constructor(routes: RouterFunction[]){
-        this.routes = routes;
-    }
+    routes: RouterFunction[] = [];
 
     handleRequest(request: Request): Response | null | Promise<Response | null> {
         const route = this.routes.find(route => {
@@ -42,6 +39,18 @@ export class Router{
 
         return fail('not found', '404');
     }
+
+    route(predicate: RoutePredicate, handler: HandlerFunction): Router {
+        this.routes.push((request => {
+            if(predicate(request)){
+                return handler(request);
+            }
+
+            return null;
+        }));
+
+        return this;
+    };
 }
 
 interface RouterFunction {

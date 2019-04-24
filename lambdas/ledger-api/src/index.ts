@@ -53,14 +53,10 @@ const handleOptions = async (event: ALBEvent) => {
 
 export const handler = async (event: ALBEvent, context: ALBEventRequestContext, callback: ALBCallback) => {
     console.log('Received event:', JSON.stringify(event, null, 2));
-    const router = new Router(
-        [
-            route(GET('/test'), (request) => {
-                return success({message: 'router works'})
-            })
-        ],
-    );
-
-    const request = eventToRequest(event);
-    return router.handleRequest(request);
+    return new Router()
+        .route(GET('/test'), (request) => {
+            console.log(JSON.stringify(request));
+            return success({message: 'router works'})
+        })
+        .handleRequest(eventToRequest(event));
 };
