@@ -1,6 +1,6 @@
-import {fail, success} from "./http";
+import {ALBCallback, ALBEvent, ALBEventRequestContext} from 'aws-lambda';
 import * as AWS from 'aws-sdk';
-import {ALBCallback, ALBEvent, ALBEventRequestContext} from "aws-lambda";
+import {fail, success} from './http';
 
 const s3 = new AWS.S3();
 const lambda = new AWS.Lambda();
@@ -11,14 +11,14 @@ const getUser = async (email: string): Promise<object | undefined> => {
     const key = `users/${email}`;
     const params = {
         Bucket: DATA_BUCKET,
-        Key: key
+        Key: key,
     };
 
     let data;
     try {
         data = await s3.getObject(params).promise();
         if (data && data.Body && typeof data.Body === 'string') {
-            return JSON.parse(data.Body)
+            return JSON.parse(data.Body);
         }
     } catch (e) {
         console.log(e);
@@ -28,9 +28,9 @@ const getUser = async (email: string): Promise<object | undefined> => {
 const savePicks = async (key: string, picks: object) => {
 
     const params = {
+        Body: JSON.stringify(picks),
         Bucket: DATA_BUCKET,
         Key: key,
-        Body: JSON.stringify(picks)
     };
 
     await s3.putObject(params).promise();
@@ -50,7 +50,6 @@ const handleOptions = async (event: ALBEvent) => {
     return success({});
 };
 
-
 export const handler = async (event: ALBEvent, context: ALBEventRequestContext, callback: ALBCallback) => {
     console.log('Received event:', JSON.stringify(event, null, 2));
     switch (event.httpMethod) {
@@ -61,6 +60,6 @@ export const handler = async (event: ALBEvent, context: ALBEventRequestContext, 
         case 'OPTIONS':
             return handleOptions(event);
         default:
-            return fail('Method Not Allowed', '405')
+            return fail('Method Not Allowed', '405');
     }
 };

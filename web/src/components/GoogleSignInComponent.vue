@@ -31,7 +31,7 @@ export default {
   },
   methods: {
     async onSignIn(googleUser) {
-      await this.$store.dispatch('signIn', googleUser);
+      await this.$store.dispatch('authenticate', googleUser);
     },
     async signOut() {
       const { gapi } = window;

@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "build": "tsc -p ./src",
-    "inspect": "npm run build && node --inspect-brk dist/users.js"
+    "inspect": "node --inspect-brk --require ts-node/register index.ts"
   },
   "author": "",
   "license": "ISC",
