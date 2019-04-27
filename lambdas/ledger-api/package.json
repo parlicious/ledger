@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "scripts": {
     "build": "tsc -p ./src",
-    "inspect": "node --inspect-brk --require ts-node/register index.ts"
+    "inspect": "node --inspect-brk --require ts-node/register src/test.ts"
   },
   "author": "",
   "license": "ISC",
@@ -16,10 +16,12 @@
     "google-auth-library": "^3.1.2",
     "googleapis": "^39.2.0",
     "lodash": "^4.17.11",
+    "path-to-regexp": "^3.0.0",
     "source-map-support": "^0.5.12",
     "typescript": "^3.4.4"
   },
   "devDependencies": {
-    "@types/node": "^11.13.7"
+    "@types/node": "^11.13.7",
+    "ts-node": "^8.1.0"
   }
 }

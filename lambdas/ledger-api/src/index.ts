@@ -1,7 +1,7 @@
-import {ALBCallback, ALBEvent, ALBEventRequestContext} from 'aws-lambda';
+import { ALBCallback, ALBEvent, ALBEventRequestContext, APIGatewayEvent, APIGatewayProxyEvent } from 'aws-lambda';
 import * as AWS from 'aws-sdk';
 import {fail, success} from './http';
-import {eventToRequest, GET, route, Router} from "./router";
+import { eventToRequest, GET, nest, path, POST, Request, route, Router } from "./router";
 
 const s3 = new AWS.S3();
 const lambda = new AWS.Lambda();
@@ -51,12 +51,21 @@ const handleOptions = async (event: ALBEvent) => {
     return success({});
 };
 
-export const handler = async (event: ALBEvent, context: ALBEventRequestContext, callback: ALBCallback) => {
-    console.log('Received event:', JSON.stringify(event, null, 2));
+export const handler = async (event: APIGatewayEvent, context: ALBEventRequestContext | undefined, callback: ALBCallback | undefined ) => {
+    // console.log('Received event:', JSON.stringify(event, null, 2));
     return new Router()
-        .route(GET('/test'), (request) => {
-            console.log(JSON.stringify(request));
-            return success({message: 'router works'})
+        .route(GET('/test'), (request: Request) => {
+            // console.log(JSON.stringify(request));
+            return success({message: 'this was a get'});
         })
+        .route(POST('/test'), (request: Request) => {
+            return success({message: 'this was a post'});
+        })
+        .nest('/parent',
+                route(GET('/test'), (request: Request) => {
+                    // console.log(JSON.stringify(request));
+                    return success({message: 'this was a nested get'});
+                }))
         .handleRequest(eventToRequest(event));
 };
+
