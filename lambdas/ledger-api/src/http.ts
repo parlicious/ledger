@@ -7,27 +7,97 @@ export const standardHeaders = {
     "Access-Control-Max-Age": 86400,
 };
 
-export const fail = (message: string, statusCode = '400') => {
+export interface Request {
+    httpMethod: string;
+    body: any;
+    params: any;
+    path: string;
+}
+
+export interface Response {
+    statusCode: string;
+    body: any;
+    headers: {[name: string]: any};
+}
+
+const respondWith = () => new ResponseBuilder();
+
+/*
+ * In a perfect world, these could be composable functions,
+ * but that's just asking for a confusing slew of nested parentheses
+ * once/if the pipeline (|>) operator is accepted, this should change.
+ */
+class ResponseBuilder {
+    response: Response = {
+        statusCode: '500',
+        body: {},
+        headers: {}
+    };
+
+    status(statusCode: string){
+        this.response.statusCode = statusCode;
+        return this;
+    }
+
+    ok(): ResponseBuilder{
+        this.response.statusCode = '200';
+        return this;
+    }
+
+    created(): ResponseBuilder{
+        this.response.statusCode = '204';
+        return this;
+    }
+
+    fail(message: string): ResponseBuilder{
+        this.response.statusCode = '400';
+        this.response.body = {message};
+        return this;
+    }
+
+    notFound(): ResponseBuilder{
+        this.response.statusCode = '404';
+        this.response.body = {message: 'Not Found'}
+        return this;
+    }
+
+    header(key: string, value: string): ResponseBuilder{
+        this.response.headers[key] = value;
+        return this;
+    }
+
+    headers(headers: {[name: string]: any}): ResponseBuilder{
+        this.response.headers = {
+            ...this.response.headers,
+            ...headers
+        };
+
+        return this;
+    }
+
+    send(body: object) {
+        this.response.body = body;
+        return this.response;
+    }
+
+}
+
+
+export const fail = (message: string, statusCode = '400'): Response => {
     const responseBody = {
         message
     };
 
-    return {
-        statusCode: statusCode,
-        body: JSON.stringify(responseBody),
-        headers: {
-            ...standardHeaders,
-        }
-    }
+    return respondWith()
+        .status(statusCode)
+        .headers(standardHeaders)
+        .send(responseBody);
 };
 
-export const success = (responseBody: object) => {
-    return {
-        statusCode: '200',
-        body: JSON.stringify(responseBody),
-        headers: {
-            ...standardHeaders,
-        }
-    }
+export const success = (responseBody: object): Response => {
+    return respondWith()
+        .ok()
+        .headers(standardHeaders)
+        .send(responseBody);
 };
 

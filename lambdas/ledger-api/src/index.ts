@@ -1,7 +1,7 @@
-import { ALBCallback, ALBEvent, ALBEventRequestContext, APIGatewayEvent, APIGatewayProxyEvent } from 'aws-lambda';
+import {ALBCallback, ALBEvent, ALBEventRequestContext, APIGatewayEvent, APIGatewayProxyEvent} from 'aws-lambda';
 import * as AWS from 'aws-sdk';
-import {fail, success} from './http';
-import { eventToRequest, GET, nest, path, POST, Request, route, Router } from "./router";
+import {fail, success, Request, Response} from './http';
+import {eventToRequest, GET, nest, path, POST,route, Router} from "./router";
 
 const s3 = new AWS.S3();
 const lambda = new AWS.Lambda();
@@ -37,35 +37,20 @@ const savePicks = async (key: string, picks: object) => {
     await s3.putObject(params).promise();
 };
 
-const handleGet = async (event: ALBEvent) => {
-    const params = event.queryStringParameters;
-    return fail('not implemented');
-};
-
-const handlePost = async (event: ALBEvent) => {
-    const body = JSON.parse(event.body || '');
-    return fail('not implemented');
-};
-
-const handleOptions = async (event: ALBEvent) => {
-    return success({});
-};
-
-export const handler = async (event: APIGatewayEvent, context: ALBEventRequestContext | undefined, callback: ALBCallback | undefined ) => {
-    // console.log('Received event:', JSON.stringify(event, null, 2));
+export const handler = async (event: APIGatewayEvent, context: ALBEventRequestContext | undefined, callback: ALBCallback | undefined) => {
     return new Router()
-        .route(GET('/test'), (request: Request) => {
-            // console.log(JSON.stringify(request));
-            return success({message: 'this was a get'});
-        })
-        .route(POST('/test'), (request: Request) => {
-            return success({message: 'this was a post'});
-        })
-        .nest('/parent',
-                route(GET('/test'), (request: Request) => {
-                    // console.log(JSON.stringify(request));
+        .withRoutes(
+            GET('/test', (request: Request) => {
+                return success({message: 'this was a get'});
+            }),
+            POST('/test', (request: Request) => {
+                return success({message: 'this was a post'});
+            }),
+            nest('/parent',
+                GET('/test', (request: Request) => {
                     return success({message: 'this was a nested get'});
-                }))
+                })
+            ))
         .handleRequest(eventToRequest(event));
 };
 

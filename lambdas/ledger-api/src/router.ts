@@ -3,39 +3,27 @@
  * functional router, but it handles ALBEvents and routes / responds
  * accordingly
  *
- * TODO: check out https://github.com/pillarjs/path-to-regexp
  */
 
 import { ALBEvent, APIGatewayEvent } from 'aws-lambda';
 import * as _ from 'lodash';
-import {fail, standardHeaders} from './http';
-
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'OPTIONS' | 'DELETE';
-
-export interface Request {
-    httpMethod: string;
-    body: any;
-    params: any;
-    path: string;
-}
-
-export interface Response {
-    statusCode: string;
-    body: any;
-    headers: object;
-}
+import {fail, standardHeaders, Request, Response} from './http';
+import pathRegexp = require('path-to-regexp');
+import {Key} from "path-to-regexp";
 
 export class Router {
-    public routes: RouterFunction[] = [];
+    private routes: RouterFunction[] = [];
 
     public handleRequest(request: Request): Response | null | Promise<Response | null> {
         console.log(this.routes);
         const selectedRoute = this.routes.find((routeFunction) => {
-            const response = routeFunction(request, baseContext) !== null;
+            const response = routeFunction(request, baseContext);
+            console.log(response);
             // console.log(`request was: ${JSON.stringify(request)} with response: ${JSON.stringify(routeFunction(request, baseContext))}`);
-            return response;
+            return !!response;
         });
-        console.log(selectedRoute);
+
+
         if (selectedRoute) {
             return selectedRoute(request, baseContext);
         }
@@ -43,25 +31,8 @@ export class Router {
         return fail('not found', '404');
     }
 
-    public nest(pattern: string, ...routerFunctions: RouterFunction[]) {
-        const context = path(pattern);
-        const newFns = routerFunctions.map((fn) => (r: Request, c: MatchContext) => fn(r, compose(context, c)));
-        this.routes.push(and(...newFns));
-
-        return this;
-    }
-
-    public route(context: MatchContext, handler: HandlerFunction): Router {
-        this.routes.push((request, parentContext) => {
-            const c = compose(parentContext, context);
-            console.log(c);
-            if (matches(request, c).matched) {
-                return handler(request);
-            }
-
-            return null;
-        });
-
+    public withRoutes(...routes: RouterFunction[]){
+        this.routes = this.routes.concat(routes);
         return this;
     }
 }
@@ -96,16 +67,6 @@ type RoutePredicate = (request: Request) => boolean;
 
 // type RouteMatcher = (request: Request, path: string) => {matches: boolean, keys: string[], }
 
-export const nroute = (predicate: RoutePredicate, handler: HandlerFunction): RouterFunction => {
-    return ((request) => {
-        if (predicate(request)) {
-            return handler(request);
-        }
-
-        return null;
-    });
-};
-
 const matches = (request: Request, context: MatchContext): MatchResult => {
     console.log(`${request.path} :: ${context.path} (${request.path === context.path})`);
     return {
@@ -117,7 +78,7 @@ export const route = (context: MatchContext, handler: HandlerFunction): RouterFu
     return (request, parentContext) => {
         const c = compose(parentContext, context);
         console.log(c);
-        if (matches(request, c)) {
+        if (match(request, c).matched) {
             return handler(request);
         }
 
@@ -136,17 +97,9 @@ export const eventToRequest = (event: APIGatewayEvent): Request => {
     };
 };
 
-const pathMatches = (path: string, pattern: string | RegExp): boolean => {
-    console.log(`matching path: ${path} to pattern: ${pattern}`);
-    if (typeof pattern === 'string') {
-        return path === pattern;
-    } else {
-        return pattern.test(path);
-    }
-};
-
 // Compose the given context with all of the child contexts to create new functions, then `and` them
-export const nest = (context: MatchContext, ...routerFunctions: RouterFunction[]): RouterFunction => {
+export const nest = (pattern: string, ...routerFunctions: RouterFunction[]): RouterFunction => {
+    const context = path(pattern);
     const newFns = routerFunctions.map((fn) => (r: Request, c: MatchContext) => fn(r, compose(context, c)));
     return and(...newFns);
 };
@@ -166,89 +119,75 @@ export const path = (pattern: string): MatchContext => {
     };
 };
 
-export const GET = (pattern: string): MatchContext => {
-    return {
-        methods: ['GET'],
+export const routeMethod = (method: string, pattern: string, handler: HandlerFunction): RouterFunction => {
+    return route({
+        methods: [method],
         path: pattern,
-    };
+    }, handler);
 };
 
-export const POST = (pattern: string): MatchContext => {
-    return {
-        methods: ['POST'],
-        path: pattern,
-    };
+export const GET = (pattern: string, handler: HandlerFunction): RouterFunction => {
+    return routeMethod('GET', pattern, handler);
 };
 
-// function match(path) {
-//     let match;
-//
-//     if (path != null) {
-//         // fast path non-ending match for / (any path matches)
-//         if (this.regexp.fast_slash) {
-//             this.params = {};
-//             this.path = '';
-//             return true;
-//         }
-//
-//         // fast path for * (everything matched in a param)
-//         if (this.regexp.fast_star) {
-//             this.params = {0: decode_param(path)};
-//             this.path = path;
-//             return true;
-//         }
-//
-//         // match the path
-//         match = this.regexp.exec(path);
-//     }
-//
-//     if (!match) {
-//         this.params = undefined;
-//         this.path = undefined;
-//         return false;
-//     }
-//
-//     // store values
-//     this.params = {};
-//     this.path = match[0];
-//
-//     const keys = this.keys;
-//     const params = this.params;
-//
-//     for (let i = 1; i < match.length; i++) {
-//         const key = keys[i - 1];
-//         const prop = key.name;
-//         const val = decode_param(match[i]);
-//
-//         if (val !== undefined || !(hasOwnProperty.call(params, prop))) {
-//             params[prop] = val;
-//         }
-//     }
-//
-//     return true;
-// }
-//
-// /**
-//  * Decode param value.
-//  *
-//  * @param {string} val
-//  * @return {string}
-//  * @private
-//  */
-//
-// function decode_param(val: any) {
-//     if (typeof val !== 'string' || val.length === 0) {
-//         return val;
-//     }
-//
-//     try {
-//         return decodeURIComponent(val);
-//     } catch (err) {
-//         if (err instanceof URIError) {
-//             err.message = 'Failed to decode param \'' + val + '\'';
-//             err.status = err.statusCode = 400;
-//         }
-//
-//         throw err;
-//     }
-// }
+export const POST = (pattern: string, handler: HandlerFunction): RouterFunction => {
+    return routeMethod('POST', pattern, handler);
+};
+
+export const PUT = (pattern: string, handler: HandlerFunction): RouterFunction => {
+    return routeMethod('PUT', pattern, handler);
+};
+
+export const OPTIONS = (pattern: string, handler: HandlerFunction): RouterFunction => {
+    return routeMethod('OPTIONS', pattern, handler);
+};
+
+export const DELETE = (pattern: string, handler: HandlerFunction): RouterFunction => {
+    return routeMethod('DELETE', pattern, handler);
+};
+
+
+// these are modifications of functions from
+// Express's routing (https://github.com/expressjs/express/blob/master/lib/router/layer.js)
+const match = (request: Request, c: MatchContext): MatchResult => {
+    let match;
+    const keys: Key[] = [];
+    const regexp = pathRegexp(c.path, keys);
+
+    if (path != null) {
+        // match the path
+        match = regexp.exec(request.path);
+    }
+
+    if (!match) {
+        return {
+            matched: false,
+        };
+    }
+
+    // store values
+    const params: any = {};
+    // const matchedPath = match[0];
+
+    for (let i = 1; i < match.length; i++) {
+        const key = keys[i - 1];
+        const prop = key.name;
+        const val = decode_param(match[i]);
+
+        if (val !== undefined || !(prop in params)) {
+            params[prop] = val;
+        }
+    }
+
+    return {
+        matched: true,
+        kv: params,
+    }
+};
+
+const decode_param = (val: any) => {
+    if (typeof val !== 'string' || val.length === 0) {
+        return val;
+    }
+    return decodeURIComponent(val);
+};

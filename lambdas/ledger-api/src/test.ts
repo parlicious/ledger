@@ -3,7 +3,7 @@ import { handler } from './index';
 
 const event: APIGatewayEvent = {
     resource: '/{proxy+}',
-    path: '/t',
+    path: '/parent/test',
     httpMethod: 'GET',
     headers: {
         'Accept': '*/*',
