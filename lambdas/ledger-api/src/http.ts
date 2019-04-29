@@ -10,7 +10,8 @@ export const standardHeaders = {
 export interface Request {
     httpMethod: string;
     body: any;
-    params: any;
+    queryParams: any;
+    pathParams: any;
     path: string;
 }
 

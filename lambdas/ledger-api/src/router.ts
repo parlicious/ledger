@@ -1,11 +1,4 @@
-/*
- * General idea here is to write something similar to the Spring 2
- * functional router, but it handles ALBEvents and routes / responds
- * accordingly
- *
- */
-
-import { ALBEvent, APIGatewayEvent } from 'aws-lambda';
+import { APIGatewayEvent } from 'aws-lambda';
 import * as _ from 'lodash';
 import {fail, standardHeaders, Request, Response} from './http';
 import pathRegexp = require('path-to-regexp');
@@ -37,6 +30,10 @@ export class Router {
     }
 }
 
+export const router = (...routes: RouterFunction[]): Router => {
+    return new Router().withRoutes(...routes);
+};
+
 interface MatchContext {
     methods: string [];
     path: string;
@@ -59,11 +56,16 @@ const compose = (m1: MatchContext, m2: MatchContext): MatchContext => {
   };
 };
 
-type RouterFunction = (request: Request, parentContext: MatchContext) => Response | null;
+type RouterFunction = (request: Request, parentContext: MatchContext) => Response | Promise<Response> |null;
 
-type HandlerFunction = (request: Request) => Response;
+interface OtherRouterFunction {
+    route: HandlerFunction,
+    match: RoutePredicate,
+}
 
-type RoutePredicate = (request: Request) => boolean;
+type HandlerFunction = (request: Request) => Response | Promise<Response>;
+
+type RoutePredicate = (request: Request) => MatchResult;
 
 // type RouteMatcher = (request: Request, path: string) => {matches: boolean, keys: string[], }
 
@@ -147,8 +149,8 @@ export const DELETE = (pattern: string, handler: HandlerFunction): RouterFunctio
 };
 
 
-// these are modifications of functions from
-// Express's routing (https://github.com/expressjs/express/blob/master/lib/router/layer.js)
+// these are modifications of functions from Express's routing
+// (https://github.com/expressjs/express/blob/master/lib/router/layer.js)
 const match = (request: Request, c: MatchContext): MatchResult => {
     let match;
     const keys: Key[] = [];
