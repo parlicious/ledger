@@ -10,6 +10,8 @@ export class Router {
     public handleRequest(request: Request): Response | null | Promise<Response | null> {
         console.log(this.routes);
         const selectedRoute = this.routes.find((routeFunction) => {
+
+            // TODO: need to fix this, it executes handler logic twice.
             const response = routeFunction(request, baseContext);
             console.log(response);
             // console.log(`request was: ${JSON.stringify(request)} with response: ${JSON.stringify(routeFunction(request, baseContext))}`);
@@ -79,9 +81,12 @@ const matches = (request: Request, context: MatchContext): MatchResult => {
 export const route = (context: MatchContext, handler: HandlerFunction): RouterFunction => {
     return (request, parentContext) => {
         const c = compose(parentContext, context);
-        console.log(c);
-        if (match(request, c).matched) {
-            return handler(request);
+        const matchResult = match(request, c);
+        if (matchResult.matched) {
+            return handler({
+                ...request,
+                pathParams: matchResult.kv
+            });
         }
 
         return null;
@@ -94,7 +99,8 @@ export const eventToRequest = (event: APIGatewayEvent): Request => {
     return {
         body,
         httpMethod,
-        params: queryStringParameters,
+        queryParams: queryStringParameters,
+        pathParams: null,
         path,
     };
 };
