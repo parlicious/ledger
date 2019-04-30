@@ -1,8 +1,8 @@
 import { APIGatewayEvent } from 'aws-lambda';
 import * as _ from 'lodash';
-import {fail, corsHeaders, Request, Response} from './http';
 import pathRegexp = require('path-to-regexp');
-import {Key} from "path-to-regexp";
+import {Key} from 'path-to-regexp';
+import {corsHeaders, fail, Request, Response} from './http';
 
 export class Router {
     private routes: Route[] = [];
@@ -16,13 +16,12 @@ export class Router {
             return match(request, route.match).matched;
         });
 
-
         if (selectedRoute) {
             const route = selectedRoute(request, baseContext);
             const matchResult = match(request, route.match);
             const requestWithPathParams = {
                 ...request,
-                pathParams: matchResult.kv
+                pathParams: matchResult.kv,
             };
             const response = route.handle(requestWithPathParams);
             return this.applyResponseMiddleware(response);
@@ -31,28 +30,27 @@ export class Router {
         return fail('not found', '404');
     }
 
-    private applyRequestMiddleware(request: Request): Request {
-        return _.flow(this.requestMiddleware)(request);
-    };
-
-    private applyResponseMiddleware(response: Response | Promise<Response>): Response | Promise<Response> {
-        return _.flow(this.responseMiddleware)(response);
-    };
-
-    public withRoutes(...routes: Route[]){
+    public withRoutes(...routes: Route[]) {
         this.routes = this.routes.concat(routes);
         return this;
     }
 
-    public registerRequestMiddleware(...requestMiddleware: RequestMiddleware[]){
+    public registerRequestMiddleware(...requestMiddleware: RequestMiddleware[]): Router {
         this.requestMiddleware.push(...requestMiddleware);
+        return this;
     }
 
-
-    public registerResponseMiddleware(...responseMiddleware: ResponseMiddleware[]){
+    public registerResponseMiddleware(...responseMiddleware: ResponseMiddleware[]): Router {
         this.responseMiddleware.push(...responseMiddleware);
+        return this;
     }
-}
+
+    private applyRequestMiddleware(request: Request): Request {
+        return _.flow(this.requestMiddleware)(request);
+    }
+    private applyResponseMiddleware(response: Response | Promise<Response>): Response | Promise<Response> {
+        return _.flow(this.responseMiddleware)(response);
+    }}
 
 export const router = (...routes: Route[]): Router => {
     return new Router().withRoutes(...routes);
@@ -83,17 +81,14 @@ const compose = (m1: MatchContext, m2: MatchContext): MatchContext => {
 // type RouterFunction = (request: Request, parentContext: MatchContext) => Response | Promise<Response> |null;
 
 interface RouterFunction {
-    handle: HandlerFunction,
-    match: MatchContext,
+    handle: HandlerFunction;
+    match: MatchContext;
 }
 
-type Route = (request: Request, context: MatchContext) => RouterFunction
-type RequestMiddleware = (request: Request) => Request;
-type ResponseMiddleware = (response: Response) => Response;
-
-
+type Route = (request: Request, context: MatchContext) => RouterFunction;
+export type RequestMiddleware = (request: Request) => Request;
+export type ResponseMiddleware = (response: Response | Promise<Response>) => Promise<Response>;
 type HandlerFunction = (request: Request) => Response | Promise<Response>;
-
 
 export const route = (context: MatchContext, handler: HandlerFunction): Route => {
     return (request, parentContext) => {
@@ -114,7 +109,7 @@ export const nest = (pattern: string, ...routerFunctions: Route[]): Route => {
 
 export const and = (...rFns: Route[]): Route => {
     return (request: Request, context: MatchContext) => {
-        const fn = _.find(rFns, fn => match(request, fn(request, context).match));
+        const fn = _.find(rFns, (fn) => match(request, fn(request, context).match));
         const route = fn ? fn : rFns[0];
         return route(request, context);
     };
@@ -154,7 +149,6 @@ export const DELETE = (pattern: string, handler: HandlerFunction): Route => {
     return routeMethod('DELETE', pattern, handler);
 };
 
-
 // these are modifications of functions from Express's routing
 // (https://github.com/expressjs/express/blob/master/lib/router/layer.js)
 const match = (request: Request, c: MatchContext): MatchResult => {
@@ -175,12 +169,11 @@ const match = (request: Request, c: MatchContext): MatchResult => {
 
     // store values
     const params: any = {};
-    // const matchedPath = match[0];
 
     for (let i = 1; i < match.length; i++) {
         const key = keys[i - 1];
         const prop = key.name;
-        const val = decode_param(match[i]);
+        const val = decodeParam(match[i]);
 
         if (val !== undefined || !(prop in params)) {
             params[prop] = val;
@@ -188,12 +181,12 @@ const match = (request: Request, c: MatchContext): MatchResult => {
     }
 
     return {
-        matched: true,
         kv: params,
-    }
+        matched: true,
+    };
 };
 
-const decode_param = (val: any) => {
+const decodeParam = (val: any) => {
     if (typeof val !== 'string' || val.length === 0) {
         return val;
     }

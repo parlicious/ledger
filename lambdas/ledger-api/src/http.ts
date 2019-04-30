@@ -1,11 +1,23 @@
-import {APIGatewayEvent} from "aws-lambda";
+import {APIGatewayEvent} from 'aws-lambda';
+import { ResponseMiddleware } from './router';
 
 export const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE",
-    "Access-Control-Allow-Headers": "Content-Type, Accept, Origin, Referer, User-Agent",
-    "Access-Control-Expose-Headers:": "*",
-    "Access-Control-Max-Age": 86400,
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, Origin, Referer, User-Agent',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, DELETE',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Expose-Headers:': '*',
+    'Access-Control-Max-Age': 86400,
+};
+
+export const enableCORS: ResponseMiddleware = async (responsePromise: Promise<Response>) => {
+    const response = await responsePromise;
+    return Promise.resolve({
+        ...response,
+        headers: {
+            ...response.headers,
+            ...corsHeaders,
+        },
+    });
 };
 
 export interface Request {
@@ -30,63 +42,63 @@ const respondWith = () => new ResponseBuilder();
  * once/if the pipeline (|>) operator is accepted, this should change.
  */
 class ResponseBuilder {
-    response: Response = {
+    public response: Response = {
         statusCode: '500',
         body: {},
-        headers: {}
+        headers: {},
     };
 
-    status(statusCode: string) {
+    public status(statusCode: string) {
         this.response.statusCode = statusCode;
         return this;
     }
 
-    ok(): ResponseBuilder {
+    public ok(): ResponseBuilder {
         this.response.statusCode = '200';
         return this;
     }
 
-    created(): ResponseBuilder {
+    public created(): ResponseBuilder {
         this.response.statusCode = '204';
         return this;
     }
 
-    fail(message: string): ResponseBuilder {
+    public fail(message: string): ResponseBuilder {
         this.response.statusCode = '400';
         this.response.body = {message};
         return this;
     }
 
-    notFound(): ResponseBuilder {
+    public notFound(): ResponseBuilder {
         this.response.statusCode = '404';
-        this.response.body = {message: 'Not Found'}
+        this.response.body = {message: 'Not Found'};
         return this;
     }
 
-    header(key: string, value: string): ResponseBuilder {
+    public header(key: string, value: string): ResponseBuilder {
         this.response.headers[key] = value;
         return this;
     }
 
-    headers(headers: { [name: string]: any }): ResponseBuilder {
+    public headers(headers: { [name: string]: any }): ResponseBuilder {
         this.response.headers = {
             ...this.response.headers,
-            ...headers
+            ...headers,
         };
 
         return this;
     }
 
-    allowingCORS(): ResponseBuilder {
+    public allowingCORS(): ResponseBuilder {
         this.response.headers = {
             ...this.response.headers,
-            ...corsHeaders
+            ...corsHeaders,
         };
 
         return this;
     }
 
-    send(body: object) {
+    public send(body: object) {
         this.response.body = body;
         return this.response;
     }
@@ -106,7 +118,7 @@ export const eventToRequest = (event: APIGatewayEvent): Request => {
 
 export const fail = (message: string, statusCode = '400'): Response => {
     const responseBody = {
-        message
+        message,
     };
 
     return respondWith()
@@ -119,4 +131,3 @@ export const success = (responseBody: object): Response => {
         .ok()
         .send(responseBody);
 };
-
