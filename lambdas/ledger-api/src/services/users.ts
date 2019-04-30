@@ -2,7 +2,7 @@ import { S3 } from 'aws-sdk';
 import { google } from 'googleapis';
 import * as _ from 'lodash';
 import 'source-map-support/register';
-import { User } from './models/user';
+import { User } from '../models/user';
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const client = new google.auth.OAuth2(CLIENT_ID);
@@ -82,7 +82,13 @@ const getSanitizedUserProfile = (user?: User) => {
     return _.omit(user, ['id']);
 };
 
-export const authenticate = async (token: string) => {
+export interface AuthResult {
+    status: 'success' | 'fail';
+    message?: string;
+    user?: User;
+}
+
+export const authenticate = async (token: string): Promise<AuthResult> => {
     const userRequest = await getUserInfoFromLoginToken(token);
     let message = '';
     if (succeeded(userRequest)) {
@@ -108,7 +114,3 @@ export const authenticate = async (token: string) => {
         status: FAIL,
     };
 };
-
-authenticate(testToken)
-    .then(console.log)
-    .catch(console.error);

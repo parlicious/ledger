@@ -3,8 +3,8 @@ import { handler } from './index';
 
 const event: APIGatewayEvent = {
     resource: '/{proxy+}',
-    path: '/parent/test',
-    httpMethod: 'GET',
+    path: '/user/parliciousapp%40gmail.com',
+    httpMethod: 'POST',
     headers: {
         'Accept': '*/*',
         'accept-encoding': 'gzip, deflate',
@@ -88,13 +88,12 @@ const event: APIGatewayEvent = {
         domainName: 'ho939c3r9c.execute-api.us-east-1.amazonaws.com',
         apiId: 'ho939c3r9c',
     },
-    body: '{\n\t\n}',
+    body: JSON.stringify({token: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjVkODg3ZjI2Y2UzMjU3N2M0YjVhOGExZTFhNTJlMTlkMzAxZjgxODEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiMTA5NjUzOTYwMzM1My11c3N0bDY1bnZsZHVyZmRzYmU2anNrdWFjOWhjc29lZy5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsImF1ZCI6IjEwOTY1Mzk2MDMzNTMtdXNzdGw2NW52bGR1cmZkc2JlNmpza3VhYzloY3NvZWcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTc5NzgyNDE5MDcxMDE4MTM4NzgiLCJlbWFpbCI6InBhcmxpY2lvdXNhcHBAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiI4Q3VYLV80OXJSNDE0bkJEN1dBUm1RIiwibmFtZSI6IkRvbm5pZSBNYXR0aW5nbHkiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDUuZ29vZ2xldXNlcmNvbnRlbnQuY29tLy14V2VPdE9SeVVsSS9BQUFBQUFBQUFBSS9BQUFBQUFBQUFBQS9BQ0hpM3JmWTFpY0hDSDU0dHhnWWFGOWpscTJFNXdLckh3L3M5Ni1jL3Bob3RvLmpwZyIsImdpdmVuX25hbWUiOiJEb25uaWUiLCJmYW1pbHlfbmFtZSI6Ik1hdHRpbmdseSIsImxvY2FsZSI6ImVuIiwiaWF0IjoxNTU2NjQzMzE2LCJleHAiOjE1NTY2NDY5MTYsImp0aSI6IjY3OWQ3ZDA3NGRkNWE5ZDlkZmE2NDE0OTU4YjUyMzE3ZjZlZDVkZWQifQ.1X3jgnELUlOfDFhC1SSjLuLogoWWACPTanIe8hl_vdsafiX2GZ0aiJ2q5TY3hgANncpihS1kEZ-APcnOJxNU9Puiu_QpqBhW3It62SvYAbwVl-j2LtXkGHYQWSXfbSo47kQ_EUDPG4RLSRDFQZFWoe78kWz3pQy9Dwf0OvdBX_xrDC6TT8MinCvRozTuU3rn58DuL6RUBSONCRXF-NdVY_OAU_wBkKm-NiSCd-BVFLtyw_xFj2afMeV172TTraoGm110ilF6hKH9t4x-QfGRXCoqet6zatXNsfS7yT1HpuMSdcp-LUwwZtDHhs1iBL4YmvbgHo_WRYInWg4TTfiEQg"}),
     isBase64Encoded: false,
 };
 
 const test = () => {
-    console.log('beginning test');
-    handler(event, undefined, undefined).then(console.log).catch(console.error);
+    handler(event).then(console.log).catch(console.error);
 };
 
 test();

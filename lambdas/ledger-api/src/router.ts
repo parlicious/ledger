@@ -2,12 +2,15 @@ import { APIGatewayEvent } from 'aws-lambda';
 import * as _ from 'lodash';
 import pathRegexp = require('path-to-regexp');
 import {Key} from 'path-to-regexp';
-import {corsHeaders, fail, Request, Response} from './http';
+import { corsHeaders, fail, parseBody, Request, Response } from './http';
+
+const defaultRequestMiddleware: RequestMiddleware[] = [parseBody];
+const defaultResponseMiddleware: ResponseMiddleware[] = [];
 
 export class Router {
     private routes: Route[] = [];
-    private requestMiddleware: RequestMiddleware[] = [];
-    private responseMiddleware: ResponseMiddleware[] = [];
+    private requestMiddleware: RequestMiddleware[] = [...defaultRequestMiddleware];
+    private responseMiddleware: ResponseMiddleware[] = [...defaultResponseMiddleware];
 
     public handleRequest(rawRequest: Request): Response | null | Promise<Response | null> {
         const request = this.applyRequestMiddleware(rawRequest);

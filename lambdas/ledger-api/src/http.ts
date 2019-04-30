@@ -1,5 +1,5 @@
 import {APIGatewayEvent} from 'aws-lambda';
-import { ResponseMiddleware } from './router';
+import { RequestMiddleware, ResponseMiddleware } from './router';
 
 export const corsHeaders = {
     'Access-Control-Allow-Headers': 'Content-Type, Accept, Origin, Referer, User-Agent',
@@ -9,7 +9,7 @@ export const corsHeaders = {
     'Access-Control-Max-Age': 86400,
 };
 
-export const enableCORS: ResponseMiddleware = async (responsePromise: Promise<Response>) => {
+export const enableCORS: ResponseMiddleware = async (responsePromise: Response | Promise<Response>) => {
     const response = await responsePromise;
     return Promise.resolve({
         ...response,
@@ -18,6 +18,13 @@ export const enableCORS: ResponseMiddleware = async (responsePromise: Promise<Re
             ...corsHeaders,
         },
     });
+};
+
+export const parseBody: RequestMiddleware = (request: Request): Request => {
+    return {
+        ...request,
+        body: JSON.parse(request.body),
+    };
 };
 
 export interface Request {
