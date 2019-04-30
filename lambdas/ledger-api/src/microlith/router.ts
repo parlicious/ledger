@@ -57,7 +57,7 @@ export class Router {
                 pathParams: matchResult.kv,
             };
             const response = route.handle(requestWithPathParams);
-            return responseToApiGatewayResult(this.applyResponseMiddleware(response);
+            return responseToApiGatewayResult(this.applyResponseMiddleware(response));
         }
 
         return responseToApiGatewayResult(fail('not found', '404'));
@@ -97,16 +97,16 @@ export const router = (...routes: Route[]): Router => {
 // these are modifications of functions from Express's routing
 // (https://github.com/expressjs/express/blob/master/lib/router/layer.js)
 export const match = (request: Request, c: MatchContext): MatchResult => {
-    let match;
+    let matcher;
     const keys: Key[] = [];
     const regexp = pathRegexp(c.path, keys);
 
     if (request.path != null) {
         // match the path
-        match = regexp.exec(request.path);
+        matcher = regexp.exec(request.path);
     }
 
-    if (!match) {
+    if (!matcher) {
         return {
             matched: false,
         };
@@ -115,10 +115,10 @@ export const match = (request: Request, c: MatchContext): MatchResult => {
     // store values
     const params: any = {};
 
-    for (let i = 1; i < match.length; i++) {
+    for (let i = 1; i < matcher.length; i++) {
         const key = keys[i - 1];
         const prop = key.name;
-        const val = decodeParam(match[i]);
+        const val = decodeParam(matcher[i]);
 
         if (val !== undefined || !(prop in params)) {
             params[prop] = val;
