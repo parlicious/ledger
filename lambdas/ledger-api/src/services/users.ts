@@ -88,6 +88,14 @@ export interface AuthResult {
     user?: User;
 }
 
+export const getUser = async (email: string): Promise<AuthResult> => {
+    const userRetrieved = await lookupUser(email);
+    return {
+        status: userRetrieved === undefined ? FAIL : SUCCESS,
+        user: getSanitizedUserProfile(userRetrieved),
+    };
+};
+
 export const authenticate = async (token: string): Promise<AuthResult> => {
     const userRequest = await getUserInfoFromLoginToken(token);
     let message = '';

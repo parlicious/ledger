@@ -1,18 +1,48 @@
-import { APIGatewayEvent } from 'aws-lambda';
+import { APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda';
 import * as _ from 'lodash';
 import pathRegexp = require('path-to-regexp');
 import {Key} from 'path-to-regexp';
-import { corsHeaders, fail, parseBody, Request, Response } from './http';
+import { corsHeaders, eventToRequest, fail, parseBody, Request, Response, responseToApiGatewayResult } from './http';
 
+export type Route = (request: Request, context: MatchContext) => RouterFunction;
+export type RequestMiddleware = (request: Request) => Request;
+export type ResponseMiddleware = (response: Response | Promise<Response>) => Promise<Response>;
+export type HandlerFunction = (request: Request) => Response | Promise<Response>;
+
+export interface MatchContext {
+    methods: string [];
+    path: string;
+}
+
+export interface MatchResult {
+    matched: boolean;
+    kv?: object;
+}
+
+export interface RouterFunction {
+    handle: HandlerFunction;
+    match: MatchContext;
+}
+
+export const baseContext = {
+    methods: ['GET', 'POST', 'PUT', 'OPTIONS', 'DELETE'],
+    path: '',
+};
 const defaultRequestMiddleware: RequestMiddleware[] = [parseBody];
 const defaultResponseMiddleware: ResponseMiddleware[] = [];
 
 export class Router {
+    private verbose = false;
     private routes: Route[] = [];
     private requestMiddleware: RequestMiddleware[] = [...defaultRequestMiddleware];
     private responseMiddleware: ResponseMiddleware[] = [...defaultResponseMiddleware];
 
-    public handleRequest(rawRequest: Request): Response | null | Promise<Response | null> {
+    public handleEvent(event: APIGatewayEvent) {
+        if (this.verbose) { console.log(event); }
+        return this.handleRequest(eventToRequest(event));
+    }
+
+    public handleRequest(rawRequest: Request): Promise<APIGatewayProxyResult> {
         const request = this.applyRequestMiddleware(rawRequest);
         const selectedRoute = this.routes.find((routeFunction: Route) => {
             const route = routeFunction(request, baseContext);
@@ -27,10 +57,15 @@ export class Router {
                 pathParams: matchResult.kv,
             };
             const response = route.handle(requestWithPathParams);
-            return this.applyResponseMiddleware(response);
+            return responseToApiGatewayResult(this.applyResponseMiddleware(response);
         }
 
-        return fail('not found', '404');
+        return responseToApiGatewayResult(fail('not found', '404'));
+    }
+
+    public withLogging(): Router {
+        this.verbose = true;
+        return this;
     }
 
     public withRoutes(...routes: Route[]) {
@@ -59,107 +94,14 @@ export const router = (...routes: Route[]): Router => {
     return new Router().withRoutes(...routes);
 };
 
-interface MatchContext {
-    methods: string [];
-    path: string;
-}
-
-interface MatchResult {
-    matched: boolean;
-    kv?: object;
-}
-
-const baseContext = {
-    methods: ['GET', 'POST', 'PUT', 'OPTIONS', 'DELETE'],
-    path: '',
-};
-
-const compose = (m1: MatchContext, m2: MatchContext): MatchContext => {
-  return {
-      methods: m2.methods,
-      path: `${m1.path}${m2.path}`,
-  };
-};
-
-// type RouterFunction = (request: Request, parentContext: MatchContext) => Response | Promise<Response> |null;
-
-interface RouterFunction {
-    handle: HandlerFunction;
-    match: MatchContext;
-}
-
-type Route = (request: Request, context: MatchContext) => RouterFunction;
-export type RequestMiddleware = (request: Request) => Request;
-export type ResponseMiddleware = (response: Response | Promise<Response>) => Promise<Response>;
-type HandlerFunction = (request: Request) => Response | Promise<Response>;
-
-export const route = (context: MatchContext, handler: HandlerFunction): Route => {
-    return (request, parentContext) => {
-        const c = compose(parentContext, context);
-        return {
-            handle: handler,
-            match: c,
-        };
-    };
-};
-
-// Compose the given context with all of the child contexts to create new functions, then `and` them
-export const nest = (pattern: string, ...routerFunctions: Route[]): Route => {
-    const context = path(pattern);
-    const newFns = routerFunctions.map((fn) => (r: Request, c: MatchContext) => fn(r, compose(context, c)));
-    return and(...newFns);
-};
-
-export const and = (...rFns: Route[]): Route => {
-    return (request: Request, context: MatchContext) => {
-        const fn = _.find(rFns, (fn) => match(request, fn(request, context).match));
-        const route = fn ? fn : rFns[0];
-        return route(request, context);
-    };
-};
-
-export const path = (pattern: string): MatchContext => {
-    return {
-        ...baseContext,
-        path: pattern,
-    };
-};
-
-export const routeMethod = (method: string, pattern: string, handler: HandlerFunction): Route => {
-    return route({
-        methods: [method],
-        path: pattern,
-    }, handler);
-};
-
-export const GET = (pattern: string, handler: HandlerFunction): Route => {
-    return routeMethod('GET', pattern, handler);
-};
-
-export const POST = (pattern: string, handler: HandlerFunction): Route => {
-    return routeMethod('POST', pattern, handler);
-};
-
-export const PUT = (pattern: string, handler: HandlerFunction): Route => {
-    return routeMethod('PUT', pattern, handler);
-};
-
-export const OPTIONS = (pattern: string, handler: HandlerFunction): Route => {
-    return routeMethod('OPTIONS', pattern, handler);
-};
-
-export const DELETE = (pattern: string, handler: HandlerFunction): Route => {
-    return routeMethod('DELETE', pattern, handler);
-};
-
 // these are modifications of functions from Express's routing
 // (https://github.com/expressjs/express/blob/master/lib/router/layer.js)
-const match = (request: Request, c: MatchContext): MatchResult => {
+export const match = (request: Request, c: MatchContext): MatchResult => {
     let match;
     const keys: Key[] = [];
     const regexp = pathRegexp(c.path, keys);
 
-    if (path != null) {
+    if (request.path != null) {
         // match the path
         match = regexp.exec(request.path);
     }

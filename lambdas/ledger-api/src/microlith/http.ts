@@ -1,4 +1,4 @@
-import {APIGatewayEvent} from 'aws-lambda';
+import { APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { RequestMiddleware, ResponseMiddleware } from './router';
 
 export const corsHeaders = {
@@ -23,7 +23,7 @@ export const enableCORS: ResponseMiddleware = async (responsePromise: Response |
 export const parseBody: RequestMiddleware = (request: Request): Request => {
     return {
         ...request,
-        body: JSON.parse(request.body),
+        body: typeof request.body === 'string' ? JSON.parse(request.body) : request.body,
     };
 };
 
@@ -121,6 +121,15 @@ export const eventToRequest = (event: APIGatewayEvent): Request => {
         pathParams: null,
         path,
     };
+};
+
+export const responseToApiGatewayResult = async (responsePromise: Response | Promise<Response>): Promise<APIGatewayProxyResult> => {
+    const response = await responsePromise;
+    return Promise.resolve({
+        body: JSON.stringify(response.body),
+        headers: response.headers,
+        statusCode: parseInt(response.statusCode, 10),
+    });
 };
 
 export const fail = (message: string, statusCode = '400'): Response => {
