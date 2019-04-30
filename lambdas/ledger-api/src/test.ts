@@ -93,6 +93,7 @@ const event: APIGatewayEvent = {
 };
 
 const test = () => {
+    console.log('beginning test');
     handler(event, undefined, undefined).then(console.log).catch(console.error);
 };
 

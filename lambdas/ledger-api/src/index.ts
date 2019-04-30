@@ -1,7 +1,7 @@
 import {ALBCallback, ALBEvent, ALBEventRequestContext, APIGatewayEvent, APIGatewayProxyEvent} from 'aws-lambda';
 import * as AWS from 'aws-sdk';
-import {fail, success, Request, Response} from './http';
-import {eventToRequest, GET, nest, path, POST, route, router, Router} from "./router";
+import {eventToRequest, success, Request, Response} from './http';
+import {GET, nest, path, POST, route, router, Router} from "./router";
 
 const s3 = new AWS.S3();
 const lambda = new AWS.Lambda();
@@ -55,7 +55,7 @@ export const handler = async (event: APIGatewayEvent, context: ALBEventRequestCo
             }),
             nest('/parent',
                 GET('/test',async (request: Request) => {
-                    console.log('running');
+                    // await sleep();
                     return success({message: 'this was a nested get'});
                 })
             ))

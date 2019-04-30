@@ -5,34 +5,35 @@ import pathRegexp = require('path-to-regexp');
 import {Key} from "path-to-regexp";
 
 export class Router {
-    private routes: RouterFunction[] = [];
+    private routes: Route[] = [];
 
     public handleRequest(request: Request): Response | null | Promise<Response | null> {
-        console.log(this.routes);
-        const selectedRoute = this.routes.find((routeFunction) => {
-
-            // TODO: need to fix this, it executes handler logic twice.
-            const response = routeFunction(request, baseContext);
-            console.log(response);
-            // console.log(`request was: ${JSON.stringify(request)} with response: ${JSON.stringify(routeFunction(request, baseContext))}`);
-            return !!response;
+        const selectedRoute = this.routes.find((routeFunction: Route) => {
+            const route = routeFunction(request, baseContext);
+            return match(request, route.match).matched;
         });
 
 
         if (selectedRoute) {
-            return selectedRoute(request, baseContext);
+            const route = selectedRoute(request, baseContext);
+            const matchResult = match(request, route.match);
+            const requestWithPathParams = {
+                ...request,
+                pathParams: matchResult.kv
+            };
+            return route.handle(requestWithPathParams);
         }
 
         return fail('not found', '404');
     }
 
-    public withRoutes(...routes: RouterFunction[]){
+    public withRoutes(...routes: Route[]){
         this.routes = this.routes.concat(routes);
         return this;
     }
 }
 
-export const router = (...routes: RouterFunction[]): Router => {
+export const router = (...routes: Route[]): Router => {
     return new Router().withRoutes(...routes);
 };
 
@@ -58,65 +59,40 @@ const compose = (m1: MatchContext, m2: MatchContext): MatchContext => {
   };
 };
 
-type RouterFunction = (request: Request, parentContext: MatchContext) => Response | Promise<Response> |null;
+// type RouterFunction = (request: Request, parentContext: MatchContext) => Response | Promise<Response> |null;
 
-interface OtherRouterFunction {
-    route: HandlerFunction,
-    match: RoutePredicate,
+interface RouterFunction {
+    handle: HandlerFunction,
+    match: MatchContext,
 }
+
+type Route = (request: Request, context: MatchContext) => RouterFunction
 
 type HandlerFunction = (request: Request) => Response | Promise<Response>;
 
-type RoutePredicate = (request: Request) => MatchResult;
 
-// type RouteMatcher = (request: Request, path: string) => {matches: boolean, keys: string[], }
-
-const matches = (request: Request, context: MatchContext): MatchResult => {
-    console.log(`${request.path} :: ${context.path} (${request.path === context.path})`);
-    return {
-        matched: request.path === context.path,
-    };
-};
-
-export const route = (context: MatchContext, handler: HandlerFunction): RouterFunction => {
+export const route = (context: MatchContext, handler: HandlerFunction): Route => {
     return (request, parentContext) => {
         const c = compose(parentContext, context);
-        const matchResult = match(request, c);
-        if (matchResult.matched) {
-            return handler({
-                ...request,
-                pathParams: matchResult.kv
-            });
-        }
-
-        return null;
-    };
-};
-
-export const eventToRequest = (event: APIGatewayEvent): Request => {
-    // console.log(event);
-    const {body, httpMethod, path, queryStringParameters} = event;
-    return {
-        body,
-        httpMethod,
-        queryParams: queryStringParameters,
-        pathParams: null,
-        path,
+        return {
+            handle: handler,
+            match: c,
+        };
     };
 };
 
 // Compose the given context with all of the child contexts to create new functions, then `and` them
-export const nest = (pattern: string, ...routerFunctions: RouterFunction[]): RouterFunction => {
+export const nest = (pattern: string, ...routerFunctions: Route[]): Route => {
     const context = path(pattern);
     const newFns = routerFunctions.map((fn) => (r: Request, c: MatchContext) => fn(r, compose(context, c)));
     return and(...newFns);
 };
 
-export const and = (...rFns: RouterFunction[]): RouterFunction => {
+export const and = (...rFns: Route[]): Route => {
     return (request: Request, context: MatchContext) => {
-        console.log(context);
-        const fn = _.find(rFns, (f) => f(request, context));
-        return fn ? fn(request, context) : null;
+        const fn = _.find(rFns, fn => match(request, fn(request, context).match));
+        const route = fn ? fn : rFns[0];
+        return route(request, context);
     };
 };
 
@@ -127,30 +103,30 @@ export const path = (pattern: string): MatchContext => {
     };
 };
 
-export const routeMethod = (method: string, pattern: string, handler: HandlerFunction): RouterFunction => {
+export const routeMethod = (method: string, pattern: string, handler: HandlerFunction): Route => {
     return route({
         methods: [method],
         path: pattern,
     }, handler);
 };
 
-export const GET = (pattern: string, handler: HandlerFunction): RouterFunction => {
+export const GET = (pattern: string, handler: HandlerFunction): Route => {
     return routeMethod('GET', pattern, handler);
 };
 
-export const POST = (pattern: string, handler: HandlerFunction): RouterFunction => {
+export const POST = (pattern: string, handler: HandlerFunction): Route => {
     return routeMethod('POST', pattern, handler);
 };
 
-export const PUT = (pattern: string, handler: HandlerFunction): RouterFunction => {
+export const PUT = (pattern: string, handler: HandlerFunction): Route => {
     return routeMethod('PUT', pattern, handler);
 };
 
-export const OPTIONS = (pattern: string, handler: HandlerFunction): RouterFunction => {
+export const OPTIONS = (pattern: string, handler: HandlerFunction): Route => {
     return routeMethod('OPTIONS', pattern, handler);
 };
 
-export const DELETE = (pattern: string, handler: HandlerFunction): RouterFunction => {
+export const DELETE = (pattern: string, handler: HandlerFunction): Route => {
     return routeMethod('DELETE', pattern, handler);
 };
 

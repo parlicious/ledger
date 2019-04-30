@@ -1,3 +1,5 @@
+import {APIGatewayEvent} from "aws-lambda";
+
 export const standardHeaders = {
     'Content-Type': 'application/json',
     "Access-Control-Allow-Origin": "*",
@@ -35,39 +37,39 @@ class ResponseBuilder {
         headers: {}
     };
 
-    status(statusCode: string){
+    status(statusCode: string) {
         this.response.statusCode = statusCode;
         return this;
     }
 
-    ok(): ResponseBuilder{
+    ok(): ResponseBuilder {
         this.response.statusCode = '200';
         return this;
     }
 
-    created(): ResponseBuilder{
+    created(): ResponseBuilder {
         this.response.statusCode = '204';
         return this;
     }
 
-    fail(message: string): ResponseBuilder{
+    fail(message: string): ResponseBuilder {
         this.response.statusCode = '400';
         this.response.body = {message};
         return this;
     }
 
-    notFound(): ResponseBuilder{
+    notFound(): ResponseBuilder {
         this.response.statusCode = '404';
         this.response.body = {message: 'Not Found'}
         return this;
     }
 
-    header(key: string, value: string): ResponseBuilder{
+    header(key: string, value: string): ResponseBuilder {
         this.response.headers[key] = value;
         return this;
     }
 
-    headers(headers: {[name: string]: any}): ResponseBuilder{
+    headers(headers: { [name: string]: any }): ResponseBuilder {
         this.response.headers = {
             ...this.response.headers,
             ...headers
@@ -83,6 +85,16 @@ class ResponseBuilder {
 
 }
 
+export const eventToRequest = (event: APIGatewayEvent): Request => {
+    const {body, httpMethod, path, queryStringParameters} = event;
+    return {
+        body,
+        httpMethod,
+        queryParams: queryStringParameters,
+        pathParams: null,
+        path,
+    };
+};
 
 export const fail = (message: string, statusCode = '400'): Response => {
     const responseBody = {
