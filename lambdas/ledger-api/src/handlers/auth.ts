@@ -1,6 +1,6 @@
-import { fail, Response, success } from '../http';
+import { fail, Response, success } from '../microlith/http';
 import { AuthRequest } from '../models/requests/auth';
-import { GET, nest, POST } from '../router';
+import { GET, nest, POST } from '../microlith/router';
 import { authenticate } from '../services/users';
 
 const authHandler = async (request: AuthRequest): Promise<Response> => {

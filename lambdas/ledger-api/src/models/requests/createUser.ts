@@ -1,4 +1,4 @@
-import {Request} from '../../http';
+import {Request} from '../../microlith/http';
 
 export interface CreateUserRequest extends Request {
     body: {
