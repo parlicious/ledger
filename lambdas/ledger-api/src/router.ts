@@ -1,13 +1,16 @@
 import { APIGatewayEvent } from 'aws-lambda';
 import * as _ from 'lodash';
-import {fail, standardHeaders, Request, Response} from './http';
+import {fail, corsHeaders, Request, Response} from './http';
 import pathRegexp = require('path-to-regexp');
 import {Key} from "path-to-regexp";
 
 export class Router {
     private routes: Route[] = [];
+    private requestMiddleware: RequestMiddleware[] = [];
+    private responseMiddleware: ResponseMiddleware[] = [];
 
-    public handleRequest(request: Request): Response | null | Promise<Response | null> {
+    public handleRequest(rawRequest: Request): Response | null | Promise<Response | null> {
+        const request = this.applyRequestMiddleware(rawRequest);
         const selectedRoute = this.routes.find((routeFunction: Route) => {
             const route = routeFunction(request, baseContext);
             return match(request, route.match).matched;
@@ -21,15 +24,33 @@ export class Router {
                 ...request,
                 pathParams: matchResult.kv
             };
-            return route.handle(requestWithPathParams);
+            const response = route.handle(requestWithPathParams);
+            return this.applyResponseMiddleware(response);
         }
 
         return fail('not found', '404');
     }
 
+    private applyRequestMiddleware(request: Request): Request {
+        return _.flow(this.requestMiddleware)(request);
+    };
+
+    private applyResponseMiddleware(response: Response | Promise<Response>): Response | Promise<Response> {
+        return _.flow(this.responseMiddleware)(response);
+    };
+
     public withRoutes(...routes: Route[]){
         this.routes = this.routes.concat(routes);
         return this;
+    }
+
+    public registerRequestMiddleware(...requestMiddleware: RequestMiddleware[]){
+        this.requestMiddleware.push(...requestMiddleware);
+    }
+
+
+    public registerResponseMiddleware(...responseMiddleware: ResponseMiddleware[]){
+        this.responseMiddleware.push(...responseMiddleware);
     }
 }
 
@@ -67,6 +88,9 @@ interface RouterFunction {
 }
 
 type Route = (request: Request, context: MatchContext) => RouterFunction
+type RequestMiddleware = (request: Request) => Request;
+type ResponseMiddleware = (response: Response) => Response;
+
 
 type HandlerFunction = (request: Request) => Response | Promise<Response>;
 

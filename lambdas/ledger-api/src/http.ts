@@ -1,7 +1,6 @@
 import {APIGatewayEvent} from "aws-lambda";
 
-export const standardHeaders = {
-    'Content-Type': 'application/json',
+export const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS, DELETE",
     "Access-Control-Allow-Headers": "Content-Type, Accept, Origin, Referer, User-Agent",
@@ -78,6 +77,15 @@ class ResponseBuilder {
         return this;
     }
 
+    allowingCORS(): ResponseBuilder {
+        this.response.headers = {
+            ...this.response.headers,
+            ...corsHeaders
+        };
+
+        return this;
+    }
+
     send(body: object) {
         this.response.body = body;
         return this.response;
@@ -103,14 +111,12 @@ export const fail = (message: string, statusCode = '400'): Response => {
 
     return respondWith()
         .status(statusCode)
-        .headers(standardHeaders)
         .send(responseBody);
 };
 
 export const success = (responseBody: object): Response => {
     return respondWith()
         .ok()
-        .headers(standardHeaders)
         .send(responseBody);
 };
 
