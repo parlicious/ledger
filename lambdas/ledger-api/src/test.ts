@@ -1,7 +1,7 @@
 import { APIGatewayEvent, APIGatewayProxyEvent } from 'aws-lambda';
 import { handler } from './index';
 
-const event: APIGatewayEvent = {
+export const testEvent: APIGatewayEvent = {
     resource: '/{proxy+}',
     path: '/user/parliciousapp%40gmail.com',
     httpMethod: 'POST',
@@ -92,8 +92,8 @@ const event: APIGatewayEvent = {
     isBase64Encoded: false,
 };
 
-const test = () => {
-    handler(event).then(console.log).catch(console.error);
-};
+// const test = () => {
+//     handler(testEvent).then(console.log).catch(console.error);
+// };
 
-test();
+// test();

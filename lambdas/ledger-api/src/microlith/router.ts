@@ -37,7 +37,7 @@ export class Router {
     private requestMiddleware: RequestMiddleware[] = [...defaultRequestMiddleware];
     private responseMiddleware: ResponseMiddleware[] = [...defaultResponseMiddleware];
 
-    public handleEvent(event: APIGatewayEvent) {
+    public handleEvent(event: APIGatewayEvent): Promise<APIGatewayProxyResult> {
         if (this.verbose) { console.log(event); }
         return this.handleRequest(eventToRequest(event));
     }

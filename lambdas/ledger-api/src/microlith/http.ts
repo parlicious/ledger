@@ -35,6 +35,14 @@ export interface Request {
     path: string;
 }
 
+export const dummyRequest: Request = {
+    httpMethod: 'GET',
+    queryParams: null,
+    pathParams: null,
+    body: {},
+    path: '/'
+};
+
 export interface Response {
     statusCode: string;
     body: any;

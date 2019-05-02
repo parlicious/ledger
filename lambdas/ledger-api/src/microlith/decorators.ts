@@ -1,5 +1,8 @@
 import 'reflect-metadata';
-import {fail, Request, Response} from './http';
+import {dummyRequest, fail, Request, Response} from './http';
+import {HandlerFunction, Route, router} from "./router";
+import {routeMethod} from "./routing-dsl";
+import {testEvent} from "../test";
 
 const metadataKey = Symbol('GET');
 
@@ -18,33 +21,48 @@ function registerProperty(target: object, propertyKey: string): void {
     }
 }
 
-function registerHandler(target: object, propertyKey: string): void {
-    let handlers: string[] = Reflect.getMetadata(metadataKey, target);
-
-    if (handlers) {
-        handlers.push(propertyKey);
-    } else {
-        handlers = [propertyKey];
-        Reflect.defineMetadata(metadataKey, handlers, target);
-    }
+interface RouteDecoratorConfig{
+    path: string;
+    method: string;
+    handlerName: string;
 }
 
-function getFilteredProperties<T, K>(origin: T): object {
-    const properties: Array<keyof T> = Reflect.getMetadata(metadataKey, origin);
-    const result: any = {};
-    properties.forEach((key: keyof T) => result[key] = origin[key]);
+function getFilteredProperties(origin: any): Route[] {
+    const properties: RouteDecoratorConfig[] = Reflect.getMetadata(metadataKey, origin);
+    const result: Route[] = [];
+    properties.forEach((config) => {
+        const handler: HandlerFunction = origin[config.handlerName];
+        result.push(routeMethod(config.method, config.path, handler));
+    });
     return result;
 }
 
 const GET = (path: string) => {
+    function registerHandler(target: object, propertyKey: string): void {
+        let handlers: RouteDecoratorConfig[] = Reflect.getMetadata(metadataKey, target);
+
+        const config = {
+          handlerName: propertyKey,
+          method: 'GET',
+          path
+        };
+
+        if (handlers) {
+            handlers.push(config);
+        } else {
+            handlers = [config];
+            Reflect.defineMetadata(metadataKey, handlers, target);
+        }
+    }
+
     return registerHandler;
 };
 
 export class Example {
 
-    @GET('/path')
+    @GET('/user/:email')
     public a(request: Request): Response {
-        return fail('not implemented');
+        return fail('not implemented', '401');
     }
 
     public b() {
@@ -61,5 +79,5 @@ export class Example {
 }
 
 const t = new Example();
-const props: {keyof Example: } = getFilteredProperties(t);
-console.log(props.a());
+const props: Route[] = getFilteredProperties(t);
+router(...props).handleEvent(testEvent).then(console.log).catch(console.error);
