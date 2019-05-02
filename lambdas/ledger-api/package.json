@@ -17,6 +17,7 @@
     "googleapis": "^39.2.0",
     "lodash": "^4.17.11",
     "path-to-regexp": "^3.0.0",
+    "reflect-metadata": "^0.1.13",
     "source-map-support": "^0.5.12",
     "typescript": "^3.4.4"
   },
