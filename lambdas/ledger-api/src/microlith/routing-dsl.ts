@@ -27,9 +27,9 @@ export const nest = (pattern: string, ...routerFunctions: Route[]): Route => {
 
 export const and = (...rFns: Route[]): Route => {
     return (request: Request, context: MatchContext) => {
-        const fn = _.find(rFns, (fn) => match(request, fn(request, context).match));
-        const route = fn ? fn : rFns[0];
-        return route(request, context);
+        const fn = _.find(rFns, (f) => match(request, f(request, context).match));
+        const rFn = fn ? fn : rFns[0];
+        return rFn(request, context);
     };
 };
 

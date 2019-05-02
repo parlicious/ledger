@@ -3,7 +3,7 @@ import { handler } from './index';
 
 export const testEvent: APIGatewayEvent = {
     resource: '/{proxy+}',
-    path: '/test/user/parliciousapp%40gmail.com',
+    path: '/users/parliciousapp%40gmail.com',
     httpMethod: 'POST',
     headers: {
         'Accept': '*/*',
@@ -92,8 +92,8 @@ export const testEvent: APIGatewayEvent = {
     isBase64Encoded: false,
 };
 
-// const test = () => {
-//     handler(testEvent).then(console.log).catch(console.error);
-// };
+const test = () => {
+    handler(testEvent).then(console.log).catch(console.error);
+};
 
-// test();
+test();

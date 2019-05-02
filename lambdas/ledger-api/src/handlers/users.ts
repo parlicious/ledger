@@ -1,42 +1,42 @@
+import { DELETE, GET, Handler, POST, PUT } from '../microlith/decorators';
 import { fail, Request, Response, success } from '../microlith/http';
-import { and, DELETE, GET, nest, POST, PUT } from '../microlith/routing-dsl';
 import { CreateUserRequest } from '../models/requests/createUser';
 import * as userService from '../services/users';
 
-const createUser = async (request: CreateUserRequest): Promise<Response>  => {
-    return fail('not implemented');
-};
+@Handler({path: '/users'})
+export class UserHandler {
 
-const updateUser = async (request: CreateUserRequest): Promise<Response>  => {
-    return fail('not implemented');
-};
-
-const deleteUser = async (request: CreateUserRequest): Promise<Response>  => {
-    return fail('not implemented');
-};
-
-const getUser = async (request: Request): Promise<Response> => {
-    const email = request.pathParams.email;
-    if (!!email) {
-        const getUserResult = await userService.getUser(email);
-        if (getUserResult.status === 'success') {
-            return success(getUserResult.user || {});
-        }
-
-        return fail(`User with email: ${email} not found`, '404');
+    @POST('/:email')
+    public async createUser(request: CreateUserRequest): Promise<Response> {
+        return fail('not implemented');
     }
-    return fail('path parameter "email" is required');
-};
 
-const searchUsers = async (request: Request): Promise<Response> => {
-    return fail('not implemented');
-};
+    @PUT('/:email')
+    public async updateUser(request: CreateUserRequest): Promise<Response> {
+        return fail('not implemented');
+    }
 
-export default and(
-    nest('/user/:email',
-        GET('', getUser),
-        PUT('', updateUser),
-        DELETE('', deleteUser)),
-    nest('/users',
-        GET('', searchUsers),
-        POST('', createUser)));
+    @DELETE('/:email')
+    public async deleteUser(request: CreateUserRequest): Promise<Response> {
+        return fail('not implemented');
+    }
+
+    @GET('/:email')
+    public async getUser(request: Request): Promise<Response> {
+        const email = request.pathParams.email;
+        if (!!email) {
+            const getUserResult = await userService.getUser(email);
+            if (getUserResult.status === 'success') {
+                return success(getUserResult.user || {});
+            }
+
+            return fail(`User with email: ${email} not found`, '404');
+        }
+        return fail('path parameter "email" is required');
+    }
+
+    @GET('')
+    public async searchUsers(request: Request): Promise<Response> {
+        return fail('not implemented');
+    }
+}
