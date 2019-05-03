@@ -12,8 +12,8 @@ interface RouteDecoratorConfig {
 
 const routeMethodDecorator = (path: string, method: string): MethodDecorator => {
     return (target: object, handlerName: string | symbol): void => {
-        let handlers: RouteDecoratorConfig[] = Reflect.getMetadata(metadataKey, target);
-
+        let handlers: RouteDecoratorConfig[] = Reflect.getMetadata(method, target);
+        // console.log(metadataKey, typeof metadataKey);
         const config = {
             handlerName,
             method,
@@ -38,11 +38,9 @@ export const OPTIONS = (path: string): MethodDecorator => routeMethodDecorator(p
 const decorators = [GET, PUT, POST, DELETE, OPTIONS];
 
 function getDecoratedRoutes(origin: any): Route[] {
-    console.log(origin);
     const properties: RouteDecoratorConfig[] = decorators
         .flatMap((s) => Reflect.getMetadata(s.name, origin))
         .filter((c) => !!c);
-    console.log(properties);
     const result: Route[] = [];
     properties.forEach((config) => {
         const handler: HandlerFunction = origin[config.handlerName].bind(origin);
