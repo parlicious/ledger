@@ -18,7 +18,7 @@
     "lodash": "^4.17.11",
     "path-to-regexp": "^3.0.0",
     "reflect-metadata": "^0.1.13",
-    "serverlith": "0.0.1",
+    "serverlith": "0.0.2",
     "source-map-support": "^0.5.12",
     "typescript": "^3.4.4"
   },

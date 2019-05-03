@@ -1,5 +1,5 @@
-import {DELETE, GET, Handler, Noop, POST, PUT} from '../microlith/router/decorators';
-import { fail, Request, Response, success } from '../microlith/http';
+import {DELETE, GET, Handler, Noop, POST, PUT} from 'serverlith/dist/router/decorators';
+import { fail, Request, Response, success } from 'serverlith/dist/http';
 import { CreateUserRequest } from '../models/requests/createUser';
 import * as userService from '../services/users';
 

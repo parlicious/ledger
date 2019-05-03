@@ -1,7 +1,7 @@
 import {APIGatewayEvent} from 'aws-lambda';
 import {UserHandler} from './handlers/users';
-import {enableCORS} from './microlith/http';
-import {router} from './microlith/router/base';
+import {enableCORS} from 'serverlith/dist/http';
+import {router} from 'serverlith/dist/router/base';
 
 
 export const handler = async (event: APIGatewayEvent) => {

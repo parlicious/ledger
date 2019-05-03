@@ -1,7 +1,7 @@
-import {fail, Request, Response, success} from '../microlith/http';
-import {GET, handle, POST} from '../microlith/router/functional';
 import {AuthRequest} from '../models/requests/auth';
 import {authenticate} from '../services/users';
+import {fail, success, Request, Response} from "serverlith/dist/http";
+import {GET, POST, handle} from "serverlith/dist/router/functional";
 
 const authHandler = async (request: AuthRequest): Promise<Response> => {
     const authResult = await authenticate(request.body.token);
