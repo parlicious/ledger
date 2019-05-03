@@ -1,5 +1,5 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { RequestMiddleware, ResponseMiddleware } from './router';
+import { RequestMiddleware, ResponseMiddleware } from './router/base';
 
 export const corsHeaders = {
     'Access-Control-Allow-Headers': 'Content-Type, Accept, Origin, Referer, User-Agent',
@@ -149,6 +149,8 @@ export const fail = (message: string, statusCode = '400'): Response => {
         .status(statusCode)
         .send(responseBody);
 };
+
+export const notFound = fail('not found', '404');
 
 export const success = (responseBody: object): Response => {
     return respondWith()

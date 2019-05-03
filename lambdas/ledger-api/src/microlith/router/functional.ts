@@ -1,6 +1,6 @@
 import * as _ from 'lodash';
-import { Request, Response} from './http';
-import { baseContext, HandlerFunction, match, MatchContext, Route } from './router';
+import {fail, notFound, Request} from '../http';
+import {baseContext, HandlerFunction, match, MatchContext, Route, RouterFunction} from './base';
 
 export const route = (context: MatchContext, handler: HandlerFunction): Route => {
     return (request, parentContext) => {
@@ -19,17 +19,21 @@ const compose = (m1: MatchContext, m2: MatchContext): MatchContext => {
     };
 };
 
-export const nest = (pattern: string, ...routerFunctions: Route[]): Route => {
+export const handle = (pattern: string, ...routerFunctions: Route[]): Route => {
     const context = path(pattern);
     const newFns = routerFunctions.map((fn) => (r: Request, c: MatchContext) => fn(r, compose(context, c)));
     return and(...newFns);
 };
 
+const noopRouterFunction: RouterFunction = {
+        match: {path: '', methods: []},
+        handle: () => notFound,
+    };
+
 export const and = (...rFns: Route[]): Route => {
-    return (request: Request, context: MatchContext) => {
-        const fn = _.find(rFns, (f) => match(request, f(request, context).match));
-        const rFn = fn ? fn : rFns[0];
-        return rFn(request, context);
+    return (request: Request, context: MatchContext): RouterFunction => {
+        const fn = rFns.find((f) => match(request, f(request, context).match).matched);
+        return fn ? fn(request, context) : noopRouterFunction;
     };
 };
 
@@ -66,3 +70,5 @@ export const OPTIONS = (pattern: string, handler: HandlerFunction): Route => {
 export const DELETE = (pattern: string, handler: HandlerFunction): Route => {
     return routeMethod('DELETE', pattern, handler);
 };
+
+export * from './base'

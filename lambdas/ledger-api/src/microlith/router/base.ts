@@ -1,8 +1,9 @@
-import { APIGatewayEvent, APIGatewayProxyResult } from 'aws-lambda';
+import {APIGatewayEvent, APIGatewayProxyResult} from 'aws-lambda';
 import * as _ from 'lodash';
 import pathRegexp = require('path-to-regexp');
 import {Key} from 'path-to-regexp';
-import { corsHeaders, eventToRequest, fail, parseBody, Request, Response, responseToApiGatewayResult } from './http';
+import {corsHeaders, eventToRequest, fail, parseBody, Request, Response, responseToApiGatewayResult} from '../http';
+import {and} from "./functional";
 
 export type Route = (request: Request, context: MatchContext) => RouterFunction;
 export type RequestMiddleware = (request: Request) => Request;
@@ -31,39 +32,32 @@ export const baseContext = {
 const defaultRequestMiddleware: RequestMiddleware[] = [parseBody];
 const defaultResponseMiddleware: ResponseMiddleware[] = [];
 
-export class Router {
+export class Base {
     private verbose = false;
     private routes: Route[] = [];
     private requestMiddleware: RequestMiddleware[] = [...defaultRequestMiddleware];
     private responseMiddleware: ResponseMiddleware[] = [...defaultResponseMiddleware];
 
     public handleEvent(event: APIGatewayEvent): Promise<APIGatewayProxyResult> {
-        if (this.verbose) { console.log(event); }
+        if (this.verbose) {
+            console.log(event);
+        }
         return this.handleRequest(eventToRequest(event));
     }
 
     public handleRequest(rawRequest: Request): Promise<APIGatewayProxyResult> {
         const request = this.applyRequestMiddleware(rawRequest);
-        const selectedRoute = this.routes.find((routeFunction: Route) => {
-            const route = routeFunction(request, baseContext);
-            return match(request, route.match).matched;
-        });
-
-        if (selectedRoute) {
-            const route = selectedRoute(request, baseContext);
-            const matchResult = match(request, route.match);
-            const requestWithPathParams = {
-                ...request,
-                pathParams: matchResult.kv,
-            };
-            const response = route.handle(requestWithPathParams);
-            return responseToApiGatewayResult(this.applyResponseMiddleware(response));
-        }
-
-        return responseToApiGatewayResult(fail('not found', '404'));
+        const route = and(...this.routes)(request, baseContext);
+        const matchResult = match(request, route.match);
+        const requestWithPathParams = {
+            ...request,
+            pathParams: matchResult.kv,
+        };
+        const response = route.handle(requestWithPathParams);
+        return responseToApiGatewayResult(this.applyResponseMiddleware(response));
     }
 
-    public withLogging(): Router {
+    public withLogging(): Base {
         this.verbose = true;
         return this;
     }
@@ -73,12 +67,12 @@ export class Router {
         return this;
     }
 
-    public registerRequestMiddleware(...requestMiddleware: RequestMiddleware[]): Router {
+    public registerRequestMiddleware(...requestMiddleware: RequestMiddleware[]): Base {
         this.requestMiddleware.push(...requestMiddleware);
         return this;
     }
 
-    public registerResponseMiddleware(...responseMiddleware: ResponseMiddleware[]): Router {
+    public registerResponseMiddleware(...responseMiddleware: ResponseMiddleware[]): Base {
         this.responseMiddleware.push(...responseMiddleware);
         return this;
     }
@@ -86,12 +80,14 @@ export class Router {
     private applyRequestMiddleware(request: Request): Request {
         return _.flow(this.requestMiddleware)(request);
     }
+
     private applyResponseMiddleware(response: Response | Promise<Response>): Response | Promise<Response> {
         return _.flow(this.responseMiddleware)(response);
-    }}
+    }
+}
 
-export const router = (...routes: Route[]): Router => {
-    return new Router().withRoutes(...routes);
+export const router = (...routes: Route[]): Base => {
+    return new Base().withRoutes(...routes);
 };
 
 // these are modifications of functions from Express's routing
@@ -106,7 +102,7 @@ export const match = (request: Request, c: MatchContext): MatchResult => {
         matcher = regexp.exec(request.path);
     }
 
-    if (!matcher) {
+    if (!matcher || !(c.methods.includes(request.httpMethod))) {
         return {
             matched: false,
         };

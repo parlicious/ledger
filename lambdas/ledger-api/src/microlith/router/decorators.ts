@@ -1,8 +1,9 @@
 import 'reflect-metadata';
-import { HandlerFunction, Route} from './router';
-import { nest, routeMethod } from './routing-dsl';
+import {HandlerFunction, Route} from './base';
+import {handle, routeMethod} from './functional';
 
-const metadataKey = Symbol('GET');
+
+const metadataKey = Symbol('serverlith-metadata');
 
 interface RouteDecoratorConfig {
     path: string;
@@ -10,10 +11,9 @@ interface RouteDecoratorConfig {
     handlerName: string | symbol;
 }
 
-const routeMethodDecorator = (path: string, method: string): MethodDecorator => {
+const routeMethodDecoratorFactory = (path: string, method: string): MethodDecorator => {
     return (target: object, handlerName: string | symbol): void => {
-        let handlers: RouteDecoratorConfig[] = Reflect.getMetadata(method, target);
-        // console.log(metadataKey, typeof metadataKey);
+        let handlers: RouteDecoratorConfig[] = Reflect.getMetadata(metadataKey, target);
         const config = {
             handlerName,
             method,
@@ -24,23 +24,20 @@ const routeMethodDecorator = (path: string, method: string): MethodDecorator => 
             handlers.push(config);
         } else {
             handlers = [config];
-            Reflect.defineMetadata(method, handlers, target);
+            Reflect.defineMetadata(metadataKey, handlers, target);
         }
     };
 };
 
-export const GET = (path: string): MethodDecorator => routeMethodDecorator(path, 'GET');
-export const PUT = (path: string): MethodDecorator => routeMethodDecorator(path, 'PUT');
-export const POST = (path: string): MethodDecorator => routeMethodDecorator(path, 'POST');
-export const DELETE = (path: string): MethodDecorator => routeMethodDecorator(path, 'DELETE');
-export const OPTIONS = (path: string): MethodDecorator => routeMethodDecorator(path, 'OPTIONS');
-
-const decorators = [GET, PUT, POST, DELETE, OPTIONS];
+export const GET = (path: string): MethodDecorator => routeMethodDecoratorFactory(path, 'GET');
+export const PUT = (path: string): MethodDecorator => routeMethodDecoratorFactory(path, 'PUT');
+export const POST = (path: string): MethodDecorator => routeMethodDecoratorFactory(path, 'POST');
+export const DELETE = (path: string): MethodDecorator => routeMethodDecoratorFactory(path, 'DELETE');
+export const OPTIONS = (path: string): MethodDecorator => routeMethodDecoratorFactory(path, 'OPTIONS');
 
 function getDecoratedRoutes(origin: any): Route[] {
-    const properties: RouteDecoratorConfig[] = decorators
-        .flatMap((s) => Reflect.getMetadata(s.name, origin))
-        .filter((c) => !!c);
+    const properties: RouteDecoratorConfig[] = Reflect.getMetadata(metadataKey, origin)
+        .filter((c: any) => !!c);
     const result: Route[] = [];
     properties.forEach((config) => {
         const handler: HandlerFunction = origin[config.handlerName].bind(origin);
@@ -53,14 +50,22 @@ interface HandlerParams {
     path: string;
 }
 
+export const Noop = <TFunction extends Function>(target: TFunction) => {
+    return target;
+};
+
 export const Handler = (params?: HandlerParams): ClassDecorator => {
+    return classDecoratorFactory(params || {path: ''})
+};
+
+const classDecoratorFactory = (params: HandlerParams) => {
     return <TFunction extends Function>(target: TFunction) => {
         // save a reference to the original constructor
-        const original = target;
+        const original: any = target;
 
         // a utility function to generate instances of a class
         function construct(ctor: Function, args: any[]) {
-            const c: any = function() {
+            const c: any = function () {
                 // @ts-ignore
                 return ctor.apply(this, args);
             };
@@ -72,11 +77,7 @@ export const Handler = (params?: HandlerParams): ClassDecorator => {
         const f: any = (...args: any[]) => {
             const result = construct(original, args);
             const routes = getDecoratedRoutes(result);
-            if (params !== undefined) {
-                result.routes = [nest(params.path, ...routes)];
-            } else {
-                result.routes = routes;
-            }
+            result.routes = [handle(params.path, ...routes)];
             return result;
         };
 
@@ -87,3 +88,6 @@ export const Handler = (params?: HandlerParams): ClassDecorator => {
         return f;
     };
 };
+
+
+export * from './base';

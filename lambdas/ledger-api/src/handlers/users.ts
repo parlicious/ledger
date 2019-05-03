@@ -1,25 +1,10 @@
-import { DELETE, GET, Handler, POST, PUT } from '../microlith/decorators';
+import {DELETE, GET, Handler, Noop, POST, PUT} from '../microlith/router/decorators';
 import { fail, Request, Response, success } from '../microlith/http';
 import { CreateUserRequest } from '../models/requests/createUser';
 import * as userService from '../services/users';
 
 @Handler({path: '/users'})
 export class UserHandler {
-
-    @POST('/:email')
-    public async createUser(request: CreateUserRequest): Promise<Response> {
-        return fail('not implemented');
-    }
-
-    @PUT('/:email')
-    public async updateUser(request: CreateUserRequest): Promise<Response> {
-        return fail('not implemented');
-    }
-
-    @DELETE('/:email')
-    public async deleteUser(request: CreateUserRequest): Promise<Response> {
-        return fail('not implemented');
-    }
 
     @GET('/:email')
     public async getUser(request: Request): Promise<Response> {
@@ -33,6 +18,21 @@ export class UserHandler {
             return fail(`User with email: ${email} not found`, '404');
         }
         return fail('path parameter "email" is required');
+    }
+
+    @POST('/:email')
+    public async createUser(request: CreateUserRequest): Promise<Response> {
+        return fail(`user was: ${request.pathParams['email']}`);
+    }
+
+    @PUT('/:email')
+    public async updateUser(request: CreateUserRequest): Promise<Response> {
+        return fail('not implemented');
+    }
+
+    @DELETE('/:email')
+    public async deleteUser(request: CreateUserRequest): Promise<Response> {
+        return fail('not implemented');
     }
 
     @GET('')
