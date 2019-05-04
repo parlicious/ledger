@@ -1,6 +1,6 @@
-import {Request} from 'serverlith/http';
+import {ServerlithRequest} from 'serverlith/http';
 
-export interface CreateUserRequest extends Request {
+export interface CreateUserRequest extends ServerlithRequest {
     body: {
         token: string,
         email: string,

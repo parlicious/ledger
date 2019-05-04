@@ -1,9 +1,9 @@
 import {AuthRequest} from '../models/requests/auth';
 import {authenticate} from '../services/users';
-import {fail, success, Response, Request} from "serverlith/http";
+import {fail, success, ServerlithResponse, ServerlithRequest} from "serverlith/http";
 import {GET, handle, POST} from "serverlith/functional";
 
-const authHandler = async (request: AuthRequest): Promise<Response> => {
+const authHandler = async (request: AuthRequest): Promise<ServerlithResponse> => {
     const authResult = await authenticate(request.body.token);
     if (authResult.status === 'success') {
         return success(authResult.user || {});
@@ -14,10 +14,10 @@ const authHandler = async (request: AuthRequest): Promise<Response> => {
 
 export default POST('/authenticate', authHandler);
 const handler = handle('/users',
-    GET('/:id', async (request: Request): Promise<Response> => {
+    GET('/:id', async (request: ServerlithRequest): Promise<ServerlithResponse> => {
         return fail('not implemented');
     }),
-    POST('', async (request: Request): Promise<Response> => {
+    POST('', async (request: ServerlithRequest): Promise<ServerlithResponse> => {
         return fail('not implemented');
     })
 );
