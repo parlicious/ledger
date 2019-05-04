@@ -1,7 +1,8 @@
 import {APIGatewayEvent} from 'aws-lambda';
 import {UserHandler} from './handlers/users';
-import {enableCORS} from 'serverlith/dist/http';
-import {router} from 'serverlith/dist/router/base';
+import {router} from "serverlith";
+import {http} from "serverlith";
+
 
 
 export const handler = async (event: APIGatewayEvent) => {
@@ -11,7 +12,7 @@ export const handler = async (event: APIGatewayEvent) => {
         ...usersHandler.routes,
     ];
     return await router(...routes)
-    // .withLogging()
-        .registerResponseMiddleware(enableCORS)
+        .withLogging()
+        .registerResponseMiddleware(http.enableCORS)
         .handleEvent(event);
 };

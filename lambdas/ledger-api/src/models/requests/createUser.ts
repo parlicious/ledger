@@ -1,4 +1,4 @@
-import {Request} from 'serverlith/dist/http';
+import {Request} from 'serverlith/http';
 
 export interface CreateUserRequest extends Request {
     body: {
