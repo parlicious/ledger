@@ -3,7 +3,7 @@ import { handler } from './index';
 
 export const testEvent: APIGatewayEvent = {
     resource: '/{proxy+}',
-    path: '/users/parliciousapp%40gmail.com',
+    path: '/authenticate',
     httpMethod: 'POST',
     headers: {
         'Accept': '*/*',

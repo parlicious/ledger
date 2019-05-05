@@ -1,4 +1,4 @@
-import {ServerlithRequest} from '../../microlith/http';
+import {ServerlithRequest} from 'serverlith/http';
 
 export interface AuthRequest extends ServerlithRequest {
     body: {
