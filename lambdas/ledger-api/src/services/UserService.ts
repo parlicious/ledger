@@ -2,7 +2,7 @@ import { S3 } from 'aws-sdk';
 import { google } from 'googleapis';
 import * as _ from 'lodash';
 import 'source-map-support/register';
-import { User } from '../models/user';
+import { User } from '../types/user';
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const client = new google.auth.OAuth2(CLIENT_ID);

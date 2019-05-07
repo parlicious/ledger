@@ -1,7 +1,7 @@
 import { Handler, POST } from 'serverlith/decorators';
 import { fail, ServerlithResponse, success } from 'serverlith/http';
-import { AuthRequest } from '../models/requests/auth';
-import { authenticate } from '../services/users';
+import { AuthRequest } from '../types/requests/auth';
+import { authenticate } from '../services/UserService';
 
 @Handler({ path: '/authenticate' })
 export class AuthHandler {
