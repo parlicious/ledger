@@ -1,6 +1,6 @@
 import {DELETE, GET, Handler, POST, PUT} from 'serverlith/decorators';
 import {fail, ServerlithRequest, ServerlithResponse, success} from 'serverlith/http';
-import {CreateUserRequest} from '../models/requests/createUser';
+import {CreateUserRequest} from '../types/requests/createUser';
 import * as userService from '../services/UserService';
 
 @Handler({path: '/users'})

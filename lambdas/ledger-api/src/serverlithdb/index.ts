@@ -1,4 +1,6 @@
 import { Wager } from '../types/wager';
+import {S3Client} from "./s3";
+import {Result} from "../types/util";
 
 const DB_ROOT = '/db';
 const DATA_ROOT = '/data';
@@ -10,26 +12,26 @@ type ViewType = Membership | Aggregate;
 /**
  * View
  */
-export interface View<T extends Entity, R> {
+export interface View<T extends Entity> {
     name: string;
     type: ViewType;
     params: { [s: string]: string | number };
     created_on: number;
     last_updated_on: number;
-    initialize: (data: T[]) => R;
+    initialize: (data: T[]) => T[];
 }
 
-export interface AggregateView<T extends Entity, R> extends View<T, R> {
+export interface AggregateView<T extends Entity> extends View<T> {
     type: 'aggregate';
-    create: (datum: T, current: R) => R | null;
-    update: (datum: T, current: R) => R | null;
-    delete: (datum: T, current: R) => R | null;
-    current: R;
+    create: (datum: T, current: T[]) => T[] | null;
+    update: (datum: T, current: T[]) => T[] | null;
+    delete: (datum: T, current: T[]) => T[] | null;
+    current: T[];
 }
 
-export interface MembershipView<T extends Entity, R> extends View<T, R> {
+export interface MembershipView<T extends Entity> extends View<T> {
     type: 'membership';
-    included: (datum: T, current: R) => boolean;
+    included: (datum: T, current: T[]) => boolean;
 }
 
 /**
@@ -39,28 +41,33 @@ export interface Entity {
     key: string;
 }
 
-class Repo<T extends Entity, R> {
+class Repo<T extends Entity> {
 
-    private views: Array<View<T, R>> = [];
+    private views: Array<View<T>> = [];
+    private s3Client: S3Client;
 
-    public get(key: string): T {
-        return { key: 'test' } as T;
+    constructor(bucketName: string){
+        this.s3Client = new S3Client(bucketName);
     }
 
-    public create(value: T) {
-        console.log(`saving ${value}`);
+    public async get(key: string): Promise<Result<T>> {
+        return this.s3Client.get(key);
+    }
+
+    public async create(value: T): Promise<Result<T>>{
         this.updateAggregateViews();
+        return this.s3Client.put(value.key, value);
     }
 
-    public update(value: T) {
-        console.log(`updating ${value}`);
+    public async update(value: T): Promise<Result<T>>{
+        return this.s3Client.put(value.key, value);
     }
 
-    public delete(key: string) {
-        console.log(`deleting key: ${key}`);
+    public async delete(key: string): Promise<Result<string>>{
+        return this.s3Client.delete(key);
     }
 
-    public registerView(view: View<T, R>) {
+    public registerView(view: View<T>) {
         this.views.push(view);
     }
 
@@ -74,10 +81,14 @@ class Repo<T extends Entity, R> {
         });
     }
 
+    private generateKeyForValue(t: T): string {
+        return '';
+    }
+
 }
 
 // Example view
-const TenLargestWagersView: AggregateView<Wager, Wager[]> = {
+const TenLargestWagersView: AggregateView<Wager> = {
     name: 'largest-wagers',
     type: 'aggregate',
     params: { count: 10 },
@@ -98,5 +109,5 @@ const TenLargestWagersView: AggregateView<Wager, Wager[]> = {
     },
 };
 
-const WagerRepo = new Repo<Wager, Wager[]>();
+const WagerRepo = new Repo<Wager>(process.env.DATA_BUCKET_NAME || 'parledger-data-public');
 WagerRepo.registerView(TenLargestWagersView);
