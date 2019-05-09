@@ -1,6 +1,6 @@
+import { Result } from '../types/util';
 import { Wager } from '../types/wager';
-import {S3Client} from "./s3";
-import {Result} from "../types/util";
+import { S3Client } from './s3';
 
 const DB_ROOT = '/db';
 const DATA_ROOT = '/data';
@@ -41,12 +41,12 @@ export interface Entity {
     key: string;
 }
 
-class Repo<T extends Entity> {
+export class Repo<T extends Entity> {
 
     private views: Array<View<T>> = [];
     private s3Client: S3Client;
 
-    constructor(bucketName: string){
+    constructor(bucketName: string) {
         this.s3Client = new S3Client(bucketName);
     }
 
@@ -54,16 +54,16 @@ class Repo<T extends Entity> {
         return this.s3Client.get(key);
     }
 
-    public async create(value: T): Promise<Result<T>>{
+    public async create(value: T): Promise<Result<T>> {
         this.updateAggregateViews();
         return this.s3Client.put(value.key, value);
     }
 
-    public async update(value: T): Promise<Result<T>>{
+    public async update(value: T): Promise<Result<T>> {
         return this.s3Client.put(value.key, value);
     }
 
-    public async delete(key: string): Promise<Result<string>>{
+    public async delete(key: string): Promise<Result<string>> {
         return this.s3Client.delete(key);
     }
 
@@ -80,11 +80,6 @@ class Repo<T extends Entity> {
             }
         });
     }
-
-    private generateKeyForValue(t: T): string {
-        return '';
-    }
-
 }
 
 // Example view
