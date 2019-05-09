@@ -1,18 +1,23 @@
 import {DELETE, GET, Handler, POST, PUT} from 'serverlith/decorators';
 import {fail, ServerlithRequest, ServerlithResponse, success} from 'serverlith/http';
 import {CreateUserRequest} from '../types/requests/createUser';
-import * as userService from '../services/UserService';
+import {UserService} from '../services/UserService';
 
 @Handler({path: '/users'})
 export class UserHandler {
+
+    private userService: UserService;
+    constructor(){
+        this.userService = new UserService();
+    }
 
     @GET({path: '/:email'})
     public async getUser(request: ServerlithRequest): Promise<ServerlithResponse> {
         const email = request.pathParams.email;
         if (!!email) {
-            const getUserResult = await userService.getUser(email);
-            if (getUserResult.status === 'success') {
-                return success(getUserResult.user || {});
+            const getUserResult = await this.userService.getUser(email);
+            if (getUserResult.isOk()) {
+                return success(getUserResult.result);
             }
 
             return fail(`User with email: ${email} not found`, '404');
