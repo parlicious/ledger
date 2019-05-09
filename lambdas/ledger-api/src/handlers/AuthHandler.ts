@@ -1,15 +1,19 @@
+import { inject, injectable } from 'inversify';
 import { Handler, POST } from 'serverlith/decorators';
 import { fail, ServerlithResponse, success } from 'serverlith/http';
-import { AuthRequest } from '../types/requests/auth';
+import { DI } from '../di';
 import { UserService} from '../services/UserService';
+import { AuthRequest } from '../types/requests/auth';
 
 @Handler({ path: '/authenticate' })
+// @injectable()
 export class AuthHandler {
 
     private userService: UserService;
 
-    constructor(){
-        this.userService = new UserService();
+    constructor(userService: UserService) {
+        this.userService = userService;
+        console.log(userService);
     }
 
     @POST({path: ''})
