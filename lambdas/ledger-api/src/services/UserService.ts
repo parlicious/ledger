@@ -1,12 +1,10 @@
-import { S3 } from 'aws-sdk';
-import { google } from 'googleapis';
-import { inject, injectable } from 'inversify';
+import {S3} from 'aws-sdk';
+import {google} from 'googleapis';
 import * as _ from 'lodash';
 import 'source-map-support/register';
-import { DI } from '../di';
-import { UserRepo } from '../repos/UserRepo';
-import { User } from '../types/user';
-import { Err, Ok, Result } from '../types/util';
+import {User} from '../types/user';
+import {UserRepo} from "../repos/UserRepo";
+import {Err, Ok, Result} from "../types/util";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const client = new google.auth.OAuth2(CLIENT_ID);
@@ -29,12 +27,12 @@ const getUserInfoFromLoginToken = async (token: string): Promise<Result<User>> =
         });
         const payload = ticket.getPayload();
         if (payload) {
-            const { sub: id, email } = payload;
+            const {sub: id, email} = payload;
             return new Ok({
-                key: email || '',
-                email,
-                id,
-            });
+                    key: email || '',
+                    email,
+                    id,
+                });
         }
     } catch (e) {
         console.error(e);
@@ -56,18 +54,16 @@ const getSanitizedUserProfile = (user?: User) => {
     return _.omit(user, ['id']);
 };
 
-@injectable()
 export class UserService {
+    private userRepo: UserRepo;
 
-    private userRepo: UserRepo = new UserRepo(DATA_BUCKET);
-
-    // constructor(@inject(DI.UserRepo) userRepo: UserRepo) {
-    //     this.userRepo = userRepo;
-    // }
+    constructor() {
+        this.userRepo = new UserRepo(DATA_BUCKET);
+    }
 
     public async getUser(email: string): Promise<Result<User>> {
         return this.userRepo.get(email);
-    }
+    };
 
     public async authenticate(token: string): Promise<Result<User>> {
         const userRequest = await getUserInfoFromLoginToken(token);
@@ -88,5 +84,5 @@ export class UserService {
         }
 
         return new Err(message);
-    }
+    };
 }

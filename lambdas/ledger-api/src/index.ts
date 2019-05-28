@@ -1,20 +1,14 @@
-import { APIGatewayEvent } from 'aws-lambda';
-import { router } from 'serverlith';
-import { enableCORS } from 'serverlith/http';
-import { DI } from './di';
+import {APIGatewayEvent} from 'aws-lambda';
+import {router} from 'serverlith';
+import {enableCORS} from 'serverlith/http';
 import { AuthHandler } from './handlers/AuthHandler';
-import { UserHandler } from './handlers/UserHandler';
-import { container } from './inversify.config';
+import {UserHandler} from './handlers/UserHandler';
 
 export const handler = async (event: APIGatewayEvent) => {
-    const authHandler: any = container.get<AuthHandler>(AuthHandler);
-    // const userHandler: any = container.get<UserHandler>(UserHandler);
-
-    console.log(authHandler);
-    // console.log(userHandler);
-
-    return await router(authHandler)// , userHandler)
-    // .withLogging()
+    const usersHandler: any = new UserHandler();
+    const authHandler: any = new AuthHandler();
+    return await router(authHandler, usersHandler)
+        // .withLogging()
         .registerResponseMiddleware(enableCORS)
         .handleEvent(event);
 };

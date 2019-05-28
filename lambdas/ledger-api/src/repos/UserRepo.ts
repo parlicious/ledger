@@ -1,4 +1,3 @@
-import { injectable } from 'inversify';
 import { Repo } from '../serverlithdb';
 import { User } from '../types/user';
 
