@@ -1,4 +1,4 @@
-import { Result } from '../types/util';
+import { Err, Result } from '../types/util';
 import { Wager } from '../types/wager';
 import { S3Client } from './s3';
 
@@ -39,7 +39,19 @@ export interface MembershipView<T extends Entity> extends View<T> {
  */
 export interface Entity {
     key: string;
+    _rev: string;
 }
+
+function  bumpRev<T extends Entity>(t: T): T {
+    const count: number = parseInt(t._rev.split(':')[0], 10) || 0;
+    const rev: string = (count + 1).toString() + Math.random().toString(36).substring(2);
+    return {
+        _rev: rev,
+        ...t,
+    };
+}
+
+const CONFLICT = new Err('rev conflict');
 
 export class Repo<T extends Entity> {
 
@@ -60,7 +72,12 @@ export class Repo<T extends Entity> {
     }
 
     public async update(value: T): Promise<Result<T>> {
-        return this.s3Client.put(value.key, value);
+        const current = await this.s3Client.get<T>(value.key);
+        if (current.isOk() && value._rev === current.result._rev) {
+            return this.s3Client.put(value.key,  bumpRev(value));
+        } else {
+            return CONFLICT;
+        }
     }
 
     public async delete(key: string): Promise<Result<string>> {
