@@ -5,12 +5,12 @@ import 'source-map-support/register';
 import {User} from '../types/user';
 import {UserRepo} from "../repos/UserRepo";
 import {Err, Ok, Result} from "../types/util";
+import {OauthUser} from "../types/requests/oauthUser";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const client = new google.auth.OAuth2(CLIENT_ID);
 
 const DATA_BUCKET = process.env.DATA_BUCKET_NAME || 'parledger-data-public';
-const s3 = new S3();
 
 const loginErrors = {
     TOKEN_INVALID: 'The supplied token was invalid',
@@ -18,7 +18,7 @@ const loginErrors = {
     USER_NOT_FOUND: 'The user was not found',
 };
 
-const getUserInfoFromLoginToken = async (token: string): Promise<Result<User>> => {
+const getUserInfoFromLoginToken = async (token: string): Promise<Result<OauthUser>> => {
     let message = 'could not get user from token';
     try {
         const ticket = await client.verifyIdToken({
@@ -42,7 +42,7 @@ const getUserInfoFromLoginToken = async (token: string): Promise<Result<User>> =
     return new Err(message);
 };
 
-const usersMatch = (u1?: User, u2?: User) => {
+const usersMatch = (u1?: User | OauthUser, u2?: User | OauthUser) => {
     if (u1 && u2) {
         return u1.id === u2.id;
     }

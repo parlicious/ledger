@@ -1,4 +1,4 @@
-import { Err, Result } from '../types/util';
+import {Err, Errors, Result} from '../types/util';
 import { Wager } from '../types/wager';
 import { S3Client } from './s3';
 
@@ -43,15 +43,14 @@ export interface Entity {
 }
 
 function  bumpRev<T extends Entity>(t: T): T {
-    const count: number = parseInt(t._rev.split(':')[0], 10) || 0;
-    const rev: string = (count + 1).toString() + Math.random().toString(36).substring(2);
+    const oldRev = t._rev || '';
+    const count = (parseInt(oldRev.split(':')[0], 10) || 0) + 1;
+    const rev = `${count.toString()}:${Math.random().toString(36).substring(2)}`;
     return {
-        _rev: rev,
         ...t,
+        _rev: rev,
     };
 }
-
-const CONFLICT = new Err('rev conflict');
 
 export class Repo<T extends Entity> {
 
@@ -67,8 +66,7 @@ export class Repo<T extends Entity> {
     }
 
     public async create(value: T): Promise<Result<T>> {
-        this.updateAggregateViews();
-        return this.s3Client.put(value.key, value);
+        return this.s3Client.put(value.key, bumpRev(value));
     }
 
     public async update(value: T): Promise<Result<T>> {
@@ -76,7 +74,7 @@ export class Repo<T extends Entity> {
         if (current.isOk() && value._rev === current.result._rev) {
             return this.s3Client.put(value.key,  bumpRev(value));
         } else {
-            return CONFLICT;
+            return Errors.conflict('_rev does not match, please use the most current version of this object');
         }
     }
 
@@ -121,5 +119,3 @@ const TenLargestWagersView: AggregateView<Wager> = {
     },
 };
 
-const WagerRepo = new Repo<Wager>(process.env.DATA_BUCKET_NAME || 'parledger-data-public');
-WagerRepo.registerView(TenLargestWagersView);

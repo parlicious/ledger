@@ -1,13 +1,13 @@
 abstract class BaseResult {
-    status: string = '';
+    succeeded = false;
     public isOk <T>(): this is Ok<T>{
-        return this.status === 'ok';
+        return this.succeeded;
     };
 }
 
 export class Ok<T> extends BaseResult{
     result: T;
-    status: string = 'ok';
+    succeeded = true;
     constructor(t: T){
         super();
         this.result = t;
@@ -16,12 +16,30 @@ export class Ok<T> extends BaseResult{
 
 export class Err extends BaseResult{
     message: string;
-    status: string = 'err';
+    succeeded = false;
 
     constructor(message: string){
         super();
         this.message = message;
     }
 }
+
+export class HttpError extends Err {
+    status: string;
+    constructor(message: string, status: string){
+        super(message);
+        this.status = status;
+    }
+}
+
+const httpError = (defaultMessage: string, status: string, message?: string) => {
+    return new HttpError(message || defaultMessage, status);
+};
+
+export const Errors = {
+    notFound: (message?: string) => httpError('not found', '404', message),
+    conflict: (message?: string) => httpError('conflict', '409', message)
+};
+
 
 export type Result<T> = Ok<T> | Err;
