@@ -3,7 +3,7 @@ import {google} from 'googleapis';
 import * as _ from 'lodash';
 import 'source-map-support/register';
 import {User} from '../types/user';
-import {UserRepo} from "../repos/UserRepo";
+import {UserRepo} from "./UserRepo";
 import {Err, Ok, Result} from "../types/util";
 import {OauthUser} from "../types/requests/oauthUser";
 
@@ -64,6 +64,10 @@ export class UserService {
     public async getUser(email: string): Promise<Result<User>> {
         return this.userRepo.get(email);
     };
+
+    public async createUser(): Promise<Result<User>> {
+        return new Err('not implemented');
+    }
 
     public async authenticate(token: string): Promise<Result<User>> {
         const userRequest = await getUserInfoFromLoginToken(token);

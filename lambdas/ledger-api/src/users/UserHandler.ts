@@ -1,7 +1,7 @@
 import {DELETE, GET, Handler, POST, PUT} from 'serverlith/decorators';
-import {fail, ServerlithRequest, ServerlithResponse, success} from 'serverlith/http';
+import {fail, ServerlithRequest, SimpleRequest, SimpleResponse, success} from 'serverlith/http';
 import {CreateUserRequest} from '../types/requests/createUser';
-import {UserService} from '../services/UserService';
+import {UserService} from './UserService';
 
 @Handler({path: '/users'})
 export class UserHandler {
@@ -12,7 +12,7 @@ export class UserHandler {
     }
 
     @GET({path: '/:email'})
-    public async getUser(request: ServerlithRequest): Promise<ServerlithResponse> {
+    public async getUser(request: SimpleRequest): Promise<SimpleResponse> {
         const email = request.pathParams.email;
         if (!!email) {
             const getUserResult = await this.userService.getUser(email);
@@ -26,22 +26,22 @@ export class UserHandler {
     }
 
     @POST({path: '/:email'})
-    public async createUser(request: CreateUserRequest): Promise<ServerlithResponse> {
+    public async createUser(request: ServerlithRequest<CreateUserRequest>): Promise<SimpleResponse> {
         return fail(`user was: ${request.pathParams.email}`);
     }
 
     @PUT({path: '/:email'})
-    public async updateUser(request: CreateUserRequest): Promise<ServerlithResponse> {
+    public async updateUser(request: CreateUserRequest): Promise<SimpleResponse> {
         return fail('not implemented');
     }
 
     @DELETE({path: '/:email'})
-    public async deleteUser(request: CreateUserRequest): Promise<ServerlithResponse> {
+    public async deleteUser(request: CreateUserRequest): Promise<SimpleResponse> {
         return fail('not implemented');
     }
 
     @GET({path: ''})
-    public async searchUsers(request: ServerlithRequest): Promise<ServerlithResponse> {
+    public async searchUsers(request: SimpleRequest): Promise<SimpleResponse> {
         return fail('not implemented');
     }
 }
