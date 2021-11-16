@@ -12,7 +12,7 @@
   "dependencies": {
     "@types/aws-lambda": "^8.10.24",
     "@types/lodash": "^4.14.123",
-    "aws-sdk": "^2.430.0",
+    "aws-sdk": "^2.814.0",
     "google-auth-library": "^3.1.2",
     "googleapis": "^39.2.0",
     "lodash": "^4.17.11",
